@@ -10,12 +10,11 @@ import { svgIcon } from '../svg/index';
 import { utilQsString } from '../util/index';
 
 
-var apibase = 'https://a.mapillary.com/v2/',
+var apibase = 'https://a.mapillary.com/v3/',
     viewercss = 'mapillary-js/mapillary.min.css',
     viewerjs = 'mapillary-js/mapillary.min.js',
-    trafficocss = 'traffico/stylesheets/traffico.css',
     clientId = 'NzNRM2otQkR2SHJzaXJmNmdQWVQ0dzo1ZWYyMmYwNjdmNDdlNmVi',
-    maxResults = 1000,
+    maxResults = 200,
     tileZoom = 14,
     dispatch = d3.dispatch('loadedImages', 'loadedSigns'),
     mapillaryCache,
@@ -114,14 +113,10 @@ function loadNextTilePage(which, currZoom, url, tile) {
 
     cache.inflight[id] = d3.json(url +
         utilQsString({
-            geojson: 'true',
-            limit: maxResults,
+            per_page: maxResults,
             page: nextPage,
             client_id: clientId,
-            min_lon: rect[0],
-            min_lat: rect[1],
-            max_lon: rect[2],
-            max_lat: rect[3]
+            bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
         }), function(err, data) {
             cache.loaded[id] = true;
             delete cache.inflight[id];
@@ -134,8 +129,8 @@ function loadNextTilePage(which, currZoom, url, tile) {
                 feature = data.features[i];
                 loc = feature.geometry.coordinates;
                 d = { key: feature.properties.key, loc: loc };
-                if (which === 'images') d.ca = feature.properties.ca;
-                if (which === 'signs') d.signs = feature.properties.rects;
+                if (which === 'images') d = { ca: feature.properties.ca, key: feature.properties.key, loc: loc };
+                if (which === 'signs') d = { key: feature.properties.detections[0].image_key, loc: loc, value: feature.properties.value };
 
                 features.push({minX: loc[0], minY: loc[1], maxX: loc[0], maxY: loc[1], data: d});
             }
@@ -144,7 +139,6 @@ function loadNextTilePage(which, currZoom, url, tile) {
 
             if (which === 'images') dispatch.call('loadedImages');
             if (which === 'signs') dispatch.call('loadedSigns');
-
             if (data.features.length === maxResults) {  // more pages to load
                 cache.nextPage[tile.id] = nextPage + 1;
                 loadNextTilePage(which, currZoom, url, tile);
@@ -245,43 +239,37 @@ export default {
 
     signHTML: function(d) {
         if (!mapillarySignDefs) return;
+        var position = mapillarySignDefs[d.value];
+        if (!position) return '<div></div>';
+        var iconStyle = [
+            'background-image:url(img/traffic-signs/traffic-signs.png)',
+            'background-repeat:no-repeat',
+            'height:' + position.height + 'px',
+            'width:' + position.width + 'px',
+            'background-position-x:-' + position.x + 'px',
+            'background-position-y:-' + position.y + 'px',
+        ];
 
-        var detectionPackage = d.signs[0].package,
-            type = d.signs[0].type,
-            country = detectionPackage.split('_')[1];
-
-        return mapillarySignDefs[country][type];
+        return '<div style="' + iconStyle.join(';') +'"></div>';
     },
 
 
     loadImages: function(projection) {
-        var url = apibase + 'search/im/geojson?';
+        var url = apibase + 'images?';
         loadTiles('images', url, projection);
     },
 
 
     loadSigns: function(context, projection) {
-        var url = apibase + 'search/im/geojson/or?';
+        var url = apibase + 'objects?';
         loadTiles('signs', url, projection);
 
-        // load traffico css
-        d3.select('head').selectAll('#traffico')
-            .data([0])
-            .enter()
-            .append('link')
-            .attr('id', 'traffico')
-            .attr('rel', 'stylesheet')
-            .attr('href', context.asset(trafficocss));
-
-        // load traffico sign defs
+        // load traffic sign defs
         if (!mapillarySignDefs) {
             mapillarySignDefs = {};
-            _.each(['au', 'br', 'ca', 'de', 'us'], function(region) {
-                d3.json(context.asset('traffico/string-maps/' + region + '-map.json'), function(err, data) {
-                    if (err) return;
-                    if (region === 'de') region = 'eu';
-                    mapillarySignDefs[region] = data;
-                });
+            d3.json(context.asset('img/traffic-signs/traffic-signs.json'), function(err, data) {
+                if (err) return;
+                mapillarySignDefs = data;
             });
         }
     },

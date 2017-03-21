@@ -45,6 +45,9 @@
 }
 
 .layer-mapillary-signs .icon-sign .icon-sign-body {
+    align-items: center;
+    display: flex;
+    justify-content: center;
     min-width: 20px;
     height: 28px;
     width: 28px;
