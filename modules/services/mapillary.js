@@ -42,12 +42,12 @@ function nearNullIsland(x, y, z) {
 
 
 function maxPageAtZoom(z) {
-    if (z < 15)   return 2;
-    if (z === 15) return 5;
-    if (z === 16) return 10;
-    if (z === 17) return 20;
-    if (z === 18) return 40;
-    if (z > 18)   return 80;
+    if (z < 15)   return 10;
+    if (z === 15) return 25;
+    if (z === 16) return 50;
+    if (z === 17) return 100;
+    if (z === 18) return 200;
+    if (z > 18)   return 400;
 }
 
 
