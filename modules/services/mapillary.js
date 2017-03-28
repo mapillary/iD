@@ -14,7 +14,7 @@ var apibase = 'https://a.mapillary.com/v3/',
     viewercss = 'mapillary-js/mapillary.min.css',
     viewerjs = 'mapillary-js/mapillary.min.js',
     clientId = 'NzNRM2otQkR2SHJzaXJmNmdQWVQ0dzo1ZWYyMmYwNjdmNDdlNmVi',
-    maxResults = 200,
+    maxResults = 1000,
     tileZoom = 14,
     dispatch = d3.dispatch('loadedImages', 'loadedSigns'),
     mapillaryCache,
@@ -42,12 +42,12 @@ function nearNullIsland(x, y, z) {
 
 
 function maxPageAtZoom(z) {
-    if (z < 15)   return 10;
-    if (z === 15) return 25;
-    if (z === 16) return 50;
-    if (z === 17) return 100;
-    if (z === 18) return 200;
-    if (z > 18)   return 400;
+    if (z < 15)   return 2;
+    if (z === 15) return 5;
+    if (z === 16) return 10;
+    if (z === 17) return 20;
+    if (z === 18) return 40;
+    if (z > 18)   return 80;
 }
 
 
