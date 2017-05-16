@@ -105,7 +105,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
         rect = tile.extent.rectangle(),
         maxPages = maxPageAtZoom(currZoom),
         nextPage = cache.nextPage[tile.id] || 0,
-        nextURL = cache.nextURL || url +
+        nextURL = cache.nextURL[tile.id] || url +
             utilQsString({
                 per_page: maxResults,
                 page: nextPage,
@@ -121,7 +121,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
     cache.inflight[id] = d3.request(nextURL)
         .mimeType("application/json")
         .response(function(xhr) {
-            cache.nextURL = parsePagination(xhr.getResponseHeader('Link')).next; 
+            cache.nextURL[tile.id] = parsePagination(xhr.getResponseHeader('Link')).next; 
             return JSON.parse(xhr.responseText); })
         .get(function(err, data) {
             cache.loaded[id] = true;
@@ -154,6 +154,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
         });
 }
 
+
 function parsePagination(links) {
     return links.split(',').map(function(rel) {
         var elements = rel.split(';');
@@ -170,6 +171,7 @@ function parsePagination(links) {
         return pagination;
     }, {});
 }
+
 
 // partition viewport into `psize` x `psize` regions
 function partitionViewport(psize, projection) {
@@ -229,8 +231,8 @@ export default {
         }
 
         mapillaryCache = {
-            images: { inflight: {}, loaded: {}, nextPage: {}, rtree: rbush() },
-            signs:  { inflight: {}, loaded: {}, nextPage: {}, rtree: rbush() }
+            images: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() },
+            signs:  { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() }
         };
 
         mapillaryImage = null;
