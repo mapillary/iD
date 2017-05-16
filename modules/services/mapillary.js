@@ -104,20 +104,26 @@ function loadNextTilePage(which, currZoom, url, tile) {
     var cache = mapillaryCache[which],
         rect = tile.extent.rectangle(),
         maxPages = maxPageAtZoom(currZoom),
-        nextPage = cache.nextPage[tile.id] || 0;
+        nextPage = cache.nextPage[tile.id] || 0,
+        nextURL = cache.nextURL || url +
+            utilQsString({
+                per_page: maxResults,
+                page: nextPage,
+                client_id: clientId,
+                bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
+            });
 
     if (nextPage > maxPages) return;
 
     var id = tile.id + ',' + String(nextPage);
     if (cache.loaded[id] || cache.inflight[id]) return;
 
-    cache.inflight[id] = d3.json(url +
-        utilQsString({
-            per_page: maxResults,
-            page: nextPage,
-            client_id: clientId,
-            bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
-        }), function(err, data) {
+    cache.inflight[id] = d3.request(nextURL)
+        .mimeType("application/json")
+        .response(function(xhr) {
+            cache.nextURL = parsePagination(xhr.getResponseHeader('Link')).next; 
+            return JSON.parse(xhr.responseText); })
+        .get(function(err, data) {
             cache.loaded[id] = true;
             delete cache.inflight[id];
             if (err || !data.features || !data.features.length) return;
@@ -145,10 +151,25 @@ function loadNextTilePage(which, currZoom, url, tile) {
             } else {
                 cache.nextPage[tile.id] = Infinity;     // no more pages to load
             }
-        }
-    );
+        });
 }
 
+function parsePagination(links) {
+    return links.split(',').map(function(rel) {
+        var elements = rel.split(';');
+        if (elements.length === 2) {
+            return [
+                /<(.+)>/.exec(elements[0])[1],
+                /rel="(.+)"/.exec(elements[1])[1]
+                ]
+        } else {
+            return ['',''];
+        }
+    }).reduce(function(pagination, val) {
+        pagination[val[1]] = val[0];
+        return pagination;
+    }, {});
+}
 
 // partition viewport into `psize` x `psize` regions
 function partitionViewport(psize, projection) {
