@@ -117,11 +117,17 @@ function loadNextTilePage(which, currZoom, url, tile) {
 
     var id = tile.id + ',' + String(nextPage);
     if (cache.loaded[id] || cache.inflight[id]) return;
-
     cache.inflight[id] = d3.request(nextURL)
-        .mimeType("application/json")
+        .mimeType('application/json')
         .response(function(xhr) {
-            cache.nextURL[tile.id] = parsePagination(xhr.getResponseHeader('Link')).next; 
+            var linkHeader = xhr.getResponseHeader('Link');
+            if (linkHeader) {
+                var pagination = parsePagination(xhr.getResponseHeader('Link'));
+                if (pagination.next) {
+                    cache.nextURL[tile.id] = pagination.next;  
+                }
+            }
+            
             return JSON.parse(xhr.responseText); })
         .get(function(err, data) {
             cache.loaded[id] = true;
@@ -154,7 +160,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
         });
 }
 
-
+// extract links to pages of API results
 function parsePagination(links) {
     return links.split(',').map(function(rel) {
         var elements = rel.split(';');
@@ -162,7 +168,7 @@ function parsePagination(links) {
             return [
                 /<(.+)>/.exec(elements[0])[1],
                 /rel="(.+)"/.exec(elements[1])[1]
-                ]
+                ];
         } else {
             return ['',''];
         }
@@ -365,6 +371,9 @@ export default {
         mapillaryImage = null;
         return this;
     },
+
+
+    parsePagination: parsePagination,
 
 
     updateViewer: function(imageKey, context) {

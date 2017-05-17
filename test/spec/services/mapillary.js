@@ -152,7 +152,7 @@ describe('iD.serviceMapillary', function() {
             var sign = 'regulatory--maximum-speed-limit-65--g1',
                 match = /img\/traffic-signs\/traffic-signs.json/;
 
-            server.respondWith('GET', match, function (xhr, id) {
+            server.respondWith('GET', match, function (xhr) {
                 xhr.respond(200, { 'Content-Type': 'application/json' },
                     '{ "' + sign + '": { "height": 24, "pixelRatio": 1, "width": 24, "x": 576, "y": 528} }');
             });
@@ -391,6 +391,15 @@ describe('iD.serviceMapillary', function() {
         it('sets and gets selected image', function() {
             mapillary.selectedImage('foo');
             expect(mapillary.selectedImage()).to.eql('foo');
+        });
+    });
+
+    describe('#parsePagination', function() {
+        it('gets URL for next page of results from API', function() {
+            var linkHeader = '<https://a.mapillary.com/v3/images?per_page=1000>; rel="first", <https://a.mapillary.com/v3/images?per_page=1000&_start_key_time=1476610926080>; rel="next"';
+            var pagination = mapillary.parsePagination(linkHeader);
+            expect(pagination.first).to.eql('https://a.mapillary.com/v3/images?per_page=1000');
+            expect(pagination.next).to.eql('https://a.mapillary.com/v3/images?per_page=1000&_start_key_time=1476610926080');
         });
     });
 
