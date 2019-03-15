@@ -17,26 +17,169 @@ import { geoExtent, geoScaleToZoom } from '../geo';
 import { svgDefs } from '../svg';
 import { utilQsString, utilRebind, utilTiler } from '../util';
 
+var CLIENT_ID = 'T0x1T2J4eTFfdm4zVjRhSVBMWTczUTo2Njg5MWViYWYxNjgwODI1';
+var REDIRECT_URI = 'http://localhost:8080';
 
 var apibase = 'https://a.mapillary.com/v3/';
 var viewercss = 'mapillary-js/mapillary.min.css';
 var viewerjs = 'mapillary-js/mapillary.min.js';
-var clientId = 'NzNRM2otQkR2SHJzaXJmNmdQWVQ0dzo1ZWYyMmYwNjdmNDdlNmVi';
+// var clientId = 'NzNRM2otQkR2SHJzaXJmNmdQWVQ0dzo1ZWYyMmYwNjdmNDdlNmVi';
 var maxResults = 1000;
 var tileZoom = 14;
 var tiler = utilTiler().zoomExtent([tileZoom, tileZoom]).skipNullIsland(true);
-var dispatch = d3_dispatch('loadedImages', 'loadedSigns', 'bearingChanged');
+var dispatch = d3_dispatch('loadedImages', 'loadedSigns', 'bearingChanged', 'authChanged');
 var _mlyFallback = false;
 var _mlyCache;
 var _mlyClicks;
 var _mlySelectedImage;
 var _mlyViewer;
+var _mlyFilters;
 
+console.log('Loading Mapillary');
+
+// Mapillary OAuth start
+
+const OAuth = function() {
+
+    const setAccessToken = (accessToken) => {
+        if (accessToken) {
+            localStorage.setItem('mapillary-access-token', accessToken);
+        } else {
+            localStorage.removeItem('mapillary-access-token');
+        }
+
+        dispatch.call('authChanged');
+    };
+
+    const getAccessToken = () => {
+        return localStorage.getItem('mapillary-access-token');
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (urlParams.has('access_token') && window.opener) {
+        window.opener.postMessage(JSON.stringify({
+            token_type: urlParams.get('token_type'),
+            access_token: urlParams.get('access_token'),
+        }), 'http://localhost:8080');
+        window.close();
+    } else if (urlParams.has('error') && window.opener) {
+        window.opener.postMessage(JSON.stringify({
+            error: urlParams.get('error'),
+            error_description: urlParams.get('error_description'),
+        }), 'http://localhost:8080');
+        window.close();
+    }
+
+    const onMessage = (event) => {
+        if (event.origin !== 'http://localhost:8080') {
+            return;
+        }
+
+        try {
+            const data = JSON.parse(event.data);
+            if (data.access_token) {
+                setAccessToken(data.access_token);
+            } else {
+                setAccessToken(null);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    window.addEventListener('message', onMessage, false);
+
+    return {
+        signIn() {
+            const authorizationUrl = `https://www.mapillary.com/connect?client_id=${CLIENT_ID}&response_type=token&scope=private:read+user:read&redirect_uri=${REDIRECT_URI}`;
+            window.open(authorizationUrl);
+        },
+        signOut() {
+            setAccessToken(null);
+        },
+        setAccessToken,
+        getAccessToken
+    };
+}();
+
+const API = window.MapillaryApi = {
+    request(url) {
+        return new Promise((resolve, reject) => {
+            d3_request(url)
+                .mimeType('application/json')
+                .header('Authorization', `Bearer ${OAuth.getAccessToken()}`)
+                .response((xhr) => JSON.parse(xhr.responseText))
+                .get((error, response) => {
+                    if (error) {
+                        return reject(error);
+                    }
+
+                    resolve(response);
+                });
+        });
+    },
+    user() {
+        return this.request(`${apibase}/me?client_id=${CLIENT_ID}`);
+    },
+    organizations() {
+        return this.request(`${apibase}/me/organizations?client_id=${CLIENT_ID}`);
+    },
+    images(organizationKey, _private, perPage = 1000) {
+        return this.request(`${apibase}/images?organization_keys=${organizationKey}&private=${_private}&per_page=${perPage}&client_id=${CLIENT_ID}`);
+    },
+    hasImagery(organizationKey, _private) {
+        return this.images(organizationKey, _private, 1)
+            .then((response) => {
+                try {
+                    return response.features.length > 0;
+                } catch (err) {
+                    console.error(err);
+                    return false;
+                }
+            });
+    },
+};
 
 function abortRequest(i) {
     i.abort();
 }
 
+function reset() {
+    var cache = _mlyCache;
+
+    if (cache) {
+        if (cache.images && cache.images.inflight) {
+            _forEach(cache.images.inflight, abortRequest);
+        }
+        if (cache.image_detections && cache.image_detections.inflight) {
+            _forEach(cache.image_detections.inflight, abortRequest);
+        }
+        if (cache.map_features && cache.map_features.inflight) {
+            _forEach(cache.map_features.inflight, abortRequest);
+        }
+        if (cache.sequences && cache.sequences.inflight) {
+            _forEach(cache.sequences.inflight, abortRequest);
+        }
+    }
+
+    _mlyCache = {
+        images: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {} },
+        image_detections: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, forImageKey: {} },
+        map_features: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() },
+        sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {}, lineString: {} }
+    };
+
+    _mlySelectedImage = null;
+    _mlyClicks = [];
+
+    _mlyFilters = {
+        organization_key: undefined,
+        mapillaryCoverage: true,
+        organizationPublicCoverage: true,
+        organizationPrivateCoverage: true,
+    };
+}
 
 function maxPageAtZoom(z) {
     if (z < 15)   return 2;
@@ -78,7 +221,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
         utilQsString({
             per_page: maxResults,
             page: nextPage,
-            client_id: clientId,
+            client_id: CLIENT_ID,
             bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
         });
 
@@ -86,7 +229,14 @@ function loadNextTilePage(which, currZoom, url, tile) {
 
     var id = tile.id + ',' + String(nextPage);
     if (cache.loaded[id] || cache.inflight[id]) return;
-    cache.inflight[id] = d3_request(nextURL)
+
+    var request = d3_request(nextURL);
+    var accessToken = OAuth.getAccessToken();
+    if (accessToken) {
+        request = request.header('Authorization', `Bearer ${accessToken}`);
+    }
+
+    cache.inflight[id] = request
         .mimeType('application/json')
         .response(function(xhr) {
             var linkHeader = xhr.getResponseHeader('Link');
@@ -117,7 +267,10 @@ function loadNextTilePage(which, currZoom, url, tile) {
                         ca: feature.properties.ca,
                         captured_at: feature.properties.captured_at,
                         captured_by: feature.properties.username,
-                        pano: feature.properties.pano
+                        pano: feature.properties.pano,
+                        organization_key: feature.properties.organization_key,
+                        private: feature.properties.private,
+                        sequence_key: feature.properties.sequence_key
                     };
 
                     cache.forImageKey[d.key] = d;     // cache imageKey -> image
@@ -235,7 +388,192 @@ function searchLimited(limit, projection, rtree) {
         }, []);
 }
 
+function uiOrganizationFilters() {
+    const state = {};
 
+    function update() {
+        let header = d3_select('#photoviewer')
+            .selectAll('.mly-header')
+            .data([0]);
+        header = header.enter()
+            .append('div')
+            .attr('class', 'mly-header')
+            .merge(header);
+
+        updateSignIn(header);
+        updateOrganizations(header);
+        updateSwitchers(header);
+    }
+
+    function updateSignIn(selection) {
+        const signIn = selection.selectAll('.mly-sign-in-btn')
+            .data([0]);
+
+        signIn.enter()
+            .append('div').append('button')
+            .attr('class', 'mly-sign-in-btn')
+            .merge(signIn)
+                .style('display', () => OAuth.getAccessToken() ? 'none' : null)
+                .text('Sign In')
+                .on('click', () => OAuth.signIn());
+    }
+
+    function updateOrganizations(selection) {
+        const dropdown = selection.selectAll('.mly-organization-select')
+            .data([0]);
+
+        const data = state.user && state.organizations
+            ? [].concat(
+                [{nice_name: state.user.username, key: 'user'}],
+                state.organizations || [],
+                [{nice_name: 'Sign out', key: 'sign-out'}]
+            )
+            : [];
+
+        dropdown.enter()
+            .append('div').append('select')
+            .attr('class', 'mly-organization-select')
+            .on('change', function() {
+                switch (d3_select(this).property('value')) {
+                    case 'sign-out':
+                        _mlyFilters.organization_key = undefined;
+                        OAuth.signOut();
+                        break;
+                    case 'user':
+                        _mlyFilters.organization_key = undefined;
+                        break;
+                    default:
+                        _mlyFilters.organization_key = d3_select(this).property('value');
+                        break;
+                }
+
+                update();
+                dispatch.call('loadedImages');
+            })
+            .merge(dropdown)
+            .style(
+                'display',
+                state.user && state.organizations ? null : 'none'
+            );
+
+        const options = dropdown.selectAll('option')
+            .data(data, d => d.key);
+
+        options.enter()
+            .append('option')
+            .text(d => d.nice_name)
+            .attr('value', d => d.key);
+
+        options.exit().remove();
+    }
+
+    function updateSwitchers(selection) {
+        let switchesWrapper = selection.selectAll('.mly-switches-wrapper')
+            .data([0]);
+        switchesWrapper = switchesWrapper.enter()
+            .append('div')
+            .attr('class', 'mly-switches-wrapper')
+            .merge(switchesWrapper);
+
+        const data = [{
+            label: 'Mapillary Coverage Layer',
+            color: 'green',
+            key: 'mapillaryCoverage',
+            isVisible: !_mlyFilters.organization_key,
+        }];
+
+        if (_mlyFilters.organization_key) {
+            (state.organizations || [])
+                .filter(organization => organization.key === _mlyFilters.organization_key)
+                .forEach(organization => {
+                    data.push({
+                        label: organization.nice_name,
+                        color: 'blue',
+                        key: 'organizationPublicCoverage',
+                        isVisible: !!_mlyFilters.organization_key,
+                    });
+                    data.push({
+                        label: `${organization.nice_name} Private`,
+                        color: 'purple',
+                        key: 'organizationPrivateCoverage',
+                        isVisible: !!_mlyFilters.organization_key,
+                    });
+                });
+        }
+
+        const labels = switchesWrapper.selectAll('.mly-form-switch')
+            .data(data, d => d.key);
+
+        labels.exit().remove();
+
+        // ENTER
+        const enterLabels = labels.enter()
+            .append('label')
+            .attr('class', 'mly-form-switch');
+        enterLabels.append('input')
+            .attr('type', 'checkbox')
+            .property('checked', d => _mlyFilters[d.key])
+            .on('change', function(d) {
+                _mlyFilters[d.key] = d3_select(this).property('checked');
+
+                dispatch.call('loadedImages');
+            });
+        enterLabels.append('i');
+        enterLabels.append('span');
+
+        // UPDATE
+        const updateLabels = labels.merge(enterLabels);
+        updateLabels
+            .style('display', d => d.isVisible ? null : 'none');
+        updateLabels
+            .select('i')
+            .attr('class', d => d.color);
+        updateLabels
+            .select('span')
+            .text(d => d.label);
+    }
+
+    function fetchData() {
+        return Promise.all([
+            API.user(),
+            API.organizations()
+        ])
+        .then(([user, organizations]) => {
+            state.user = user;
+            state.organizations = organizations;
+        });
+    }
+
+    dispatch.on('authChanged', () => {
+        const accessToken = OAuth.getAccessToken();
+
+        // reset viewer token
+        _mlyViewer.setAuthToken(accessToken);
+
+        // reset caches
+        reset();
+
+        // reset state
+        state.user = undefined;
+        state.organizations = undefined;
+
+        dispatch.call('loadedImages');
+
+        if (!accessToken) {
+            update();
+            return;
+        }
+
+        fetchData().then(update);
+    });
+
+    if (OAuth.getAccessToken()) {
+        fetchData()
+            .then(update);
+    }
+
+    update();
+}
 
 export default {
 
@@ -247,47 +585,22 @@ export default {
         this.event = utilRebind(this, dispatch, 'on');
     },
 
-    reset: function() {
-        var cache = _mlyCache;
-
-        if (cache) {
-            if (cache.images && cache.images.inflight) {
-                _forEach(cache.images.inflight, abortRequest);
-            }
-            if (cache.image_detections && cache.image_detections.inflight) {
-                _forEach(cache.image_detections.inflight, abortRequest);
-            }
-            if (cache.map_features && cache.map_features.inflight) {
-                _forEach(cache.map_features.inflight, abortRequest);
-            }
-            if (cache.sequences && cache.sequences.inflight) {
-                _forEach(cache.sequences.inflight, abortRequest);
-            }
-        }
-
-        _mlyCache = {
-            images: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {} },
-            image_detections: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, forImageKey: {} },
-            map_features: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() },
-            sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {}, lineString: {} }
-        };
-
-        _mlySelectedImage = null;
-        _mlyClicks = [];
-    },
-
+    reset,
 
     images: function(projection) {
-        var limit = 5;
+        var limit = 500;
         return searchLimited(limit, projection, _mlyCache.images.rtree);
     },
 
 
     signs: function(projection) {
-        var limit = 5;
+        var limit = 500;
         return searchLimited(limit, projection, _mlyCache.map_features.rtree);
     },
 
+    filters: function() {
+        return _mlyFilters;
+    },
 
     sequences: function(projection) {
         var viewport = projection.clipExtent();
@@ -335,6 +648,8 @@ export default {
         // add mly-wrapper
         var wrap = d3_select('#photoviewer').selectAll('.mly-wrapper')
             .data([0]);
+
+        uiOrganizationFilters();
 
         wrap.enter()
             .append('div')
@@ -461,7 +776,8 @@ export default {
                 };
             }
 
-            _mlyViewer = new Mapillary.Viewer('mly', clientId, null, opts);
+            _mlyViewer = new Mapillary.Viewer('mly', CLIENT_ID, null, opts);
+            _mlyViewer.setAuthToken(OAuth.getAccessToken());
             _mlyViewer.on('nodechanged', nodeChanged);
             _mlyViewer.on('bearingchanged', bearingChanged);
             _mlyViewer.moveToKey(imageKey)
