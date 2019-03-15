@@ -190,6 +190,20 @@
     stroke: #55ff22;
 }
 
+.layer-mapillary-images .viewfield-group.viewfield-group--public-organization * {
+    fill: #5087FF;
+}
+.layer-mapillary-images .sequence.sequence--public-organization {
+    stroke: #5087FF;
+}
+
+.layer-mapillary-images .viewfield-group.viewfield-group--private-organization * {
+    fill: #8F89F5;
+}
+.layer-mapillary-images .sequence.sequence--private-organization {
+    stroke: #8F89F5;
+}
+
 
 /* Mapillary Sign Layer */
 .layer-mapillary-signs {
@@ -207,6 +221,94 @@
 .layer-mapillary-signs .icon-sign.selected {
     outline: 5px solid #ffee00;
     background-color: #ffee00;
+}
+
+/* Mapillary filters */
+.mly-header {
+    margin: 5px 0;
+}
+
+.mly-sign-in-btn {
+    background-color: #05CB63;
+    border-radius: 4px;
+    color: #fff;
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 12px;
+    height: 24px;
+}
+
+.mly-form-switch {
+    display: block;
+    line-height: 1.2rem;
+    margin: .2rem 0;
+    min-height: 1.4rem;
+    padding: .1rem .4rem .1rem 1.2rem;
+    position: relative;
+
+    padding-left: 2rem;
+}
+
+.mly-form-switch input {
+    clip: rect(0,0,0,0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    position: absolute;
+    width: 1px;
+
+    box-sizing: border-box;
+    padding: 0;
+}
+
+.mly-form-switch i {
+    /* box-sizing: border-box; */
+
+    background: #bcc3ce;
+    background-clip: padding-box;
+    border-radius: .45rem;
+    height: .9rem;
+    left: 0;
+    top: .25rem;
+    width: 1.6rem;
+
+    border: .05rem solid #bcc3ce;
+    cursor: pointer;
+    display: inline-block;
+    position: absolute;
+    transition: background .2s,border .2s,box-shadow .2s,color .2s;
+}
+
+.mly-form-switch i::before {
+    background: #fff;
+    border-radius: 50%;
+    content: "";
+    display: block;
+    height: .8rem;
+    left: 0;
+    position: absolute;
+    top: 0;
+    transition: background .2s,border .2s,box-shadow .2s,color .2s,left .2s;
+    width: .8rem;
+}
+
+.mly-form-switch input:checked+i.green {
+    background: #55ff22;
+    border-color: #55ff22;
+}
+
+.mly-form-switch input:checked+i.blue {
+    background: #5087FF;
+    border-color: #5087FF;
+}
+
+.mly-form-switch input:checked+i.purple {
+    background: #8F89F5;
+    border-color: #8F89F5;
+}
+
+.mly-form-switch input:checked+i::before {
+    left: 0.7rem;
 }
 
 
@@ -280,6 +382,10 @@ label.streetside-hires {
 #mly .domRenderer .Attribution {
     /* we will roll our own to avoid async update issues like #4526 */
     display: none;
+}
+
+.mly-wrapper {
+    /* height: 200px; */
 }
 
 .mly-wrapper .photo-attribution a:active,
