@@ -120,8 +120,21 @@ export function svgMapillaryImages(projection, context, dispatch) {
         return t;
     }
 
+    function shouldDisplayTile(filters, data) {
+        return (filters.mapillaryCoverage && !data.organization_key && !filters.organization_key)
+            || (filters.organization_key
+                && data.organization_key === filters.organization_key
+                && ((filters.organizationPublicCoverage && filters.organizationPrivateCoverage)
+                    || (filters.organizationPublicCoverage && !data.private)
+                    || (filters.organizationPrivateCoverage && data.private)
+                )
+            );
+    }
+
 
     function update() {
+        console.log('update');
+
         var viewer = d3_select('#photoviewer');
         var selected = viewer.empty() ? undefined : viewer.datum();
 
@@ -132,6 +145,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var service = getService();
         var sequences = (service ? service.sequences(projection) : []);
         var images = (service && showMarkers ? service.images(projection) : []);
+        var filters = service.filters();
 
         var traces = layer.selectAll('.sequences').selectAll('.sequence')
             .data(sequences, function(d) { return d.properties.key; });
@@ -144,8 +158,19 @@ export function svgMapillaryImages(projection, context, dispatch) {
         traces = traces.enter()
             .append('path')
             .attr('class', 'sequence')
+            .classed('sequence--private-organization', (d) =>
+                d.properties.organization_key && d.properties.private
+            )
+            .classed('sequence--public-organization', (d) =>
+                d.properties.organization_key && !d.properties.private
+            )
             .merge(traces)
-            .attr('d', svgPath(projection).geojson);
+            .attr('d', svgPath(projection).geojson)
+            .style('display', (d) =>
+                shouldDisplayTile(filters, d.properties)
+                    ? null
+                    : 'none'
+            );
 
 
         var groups = layer.selectAll('.markers').selectAll('.viewfield-group')
@@ -159,6 +184,12 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var groupsEnter = groups.enter()
             .append('g')
             .attr('class', 'viewfield-group')
+            .classed('viewfield-group--private-organization', (d) =>
+                d.organization_key && d.private
+            )
+            .classed('viewfield-group--public-organization', (d) =>
+                d.organization_key && !d.private
+            )
             .on('mouseenter', mouseover)
             .on('mouseleave', mouseout)
             .on('click', click);
@@ -176,6 +207,11 @@ export function svgMapillaryImages(projection, context, dispatch) {
                     : b.loc[1] - a.loc[1];  // sort Y
             })
             .attr('transform', transform)
+            .style('display', (d) =>
+                shouldDisplayTile(filters, d)
+                    ? null
+                    : 'none'
+            )
             .select('.viewfield-scale');
 
 
