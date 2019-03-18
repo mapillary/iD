@@ -19,6 +19,7 @@ import { utilQsString, utilRebind, utilTiler } from '../util';
 
 var CLIENT_ID = 'T0x1T2J4eTFfdm4zVjRhSVBMWTczUTo2Njg5MWViYWYxNjgwODI1';
 var REDIRECT_URI = 'http://localhost:8080';
+var POST_MESSAGE_TARGET_ORIGIN = 'http://localhost:8080';
 
 var apibase = 'https://a.mapillary.com/v3/';
 var viewercss = 'mapillary-js/mapillary.min.css';
@@ -61,18 +62,18 @@ const OAuth = function() {
         window.opener.postMessage(JSON.stringify({
             token_type: urlParams.get('token_type'),
             access_token: urlParams.get('access_token'),
-        }), 'http://localhost:8080');
+        }), POST_MESSAGE_TARGET_ORIGIN);
         window.close();
     } else if (urlParams.has('error') && window.opener) {
         window.opener.postMessage(JSON.stringify({
             error: urlParams.get('error'),
             error_description: urlParams.get('error_description'),
-        }), 'http://localhost:8080');
+        }), POST_MESSAGE_TARGET_ORIGIN);
         window.close();
     }
 
     const onMessage = (event) => {
-        if (event.origin !== 'http://localhost:8080') {
+        if (event.origin !== POST_MESSAGE_TARGET_ORIGIN) {
             return;
         }
 
