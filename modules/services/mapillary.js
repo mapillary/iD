@@ -315,7 +315,9 @@ function loadNextTilePage(which, currZoom, url, tile) {
                         key: feature.properties.key,
                         value: feature.properties.value,
                         package: feature.properties.package,
-                        detections: feature.properties.detections
+                        detections: feature.properties.detections,
+                        organization_key: feature.properties.organization_key,
+                        private: feature.properties.private,
                     };
                 }
 
@@ -388,7 +390,9 @@ function searchLimited(limit, projection, rtree) {
         }, []);
 }
 
-function uiOrganizationFilters() {
+
+const uiOrganizationFilters = function() {
+    let initialized = false;
     const state = {};
 
     function update() {
@@ -448,6 +452,13 @@ function uiOrganizationFilters() {
                 }
 
                 update();
+
+                _mlyViewer.setFilter(
+                    _mlyFilters.organization_key
+                    ? ['==', 'organizationKey', _mlyFilters.organization_key ]
+                    : null
+                );
+
                 dispatch.call('loadedImages');
             })
             .merge(dropdown)
@@ -544,36 +555,47 @@ function uiOrganizationFilters() {
         });
     }
 
-    dispatch.on('authChanged', () => {
-        const accessToken = OAuth.getAccessToken();
-
-        // reset viewer token
-        _mlyViewer.setAuthToken(accessToken);
-
-        // reset caches
-        reset();
-
-        // reset state
-        state.user = undefined;
-        state.organizations = undefined;
-
-        dispatch.call('loadedImages');
-
-        if (!accessToken) {
-            update();
+    function init() {
+        if (initialized) {
             return;
         }
+        initialized = true;
 
-        fetchData().then(update);
-    });
+        dispatch.on('authChanged', () => {
+            const accessToken = OAuth.getAccessToken();
 
-    if (OAuth.getAccessToken()) {
-        fetchData()
-            .then(update);
+            // reset viewer token
+            _mlyViewer.setAuthToken(accessToken);
+
+            // reset caches
+            reset();
+
+            // reset state
+            state.user = undefined;
+            state.organizations = undefined;
+
+            dispatch.call('loadedImages');
+
+            if (!accessToken) {
+                update();
+                return;
+            }
+
+            fetchData().then(update);
+        });
+
+        if (OAuth.getAccessToken()) {
+            fetchData()
+                .then(update);
+        }
+
+        update();
     }
 
-    update();
-}
+    return {
+        init,
+    };
+}();
 
 export default {
 
@@ -649,7 +671,7 @@ export default {
         var wrap = d3_select('#photoviewer').selectAll('.mly-wrapper')
             .data([0]);
 
-        uiOrganizationFilters();
+        uiOrganizationFilters.init();
 
         wrap.enter()
             .append('div')

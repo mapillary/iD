@@ -55,6 +55,16 @@ export function svgMapillarySigns(projection, context, dispatch) {
         layer.style('display', 'none');
     }
 
+    function shouldDisplayTile(filters, data) {
+        return (filters.mapillaryCoverage && !data.organization_key && !filters.organization_key)
+            || (filters.organization_key
+                && data.organization_key === filters.organization_key
+                && ((filters.organizationPublicCoverage && filters.organizationPrivateCoverage)
+                    || (filters.organizationPublicCoverage && !data.private)
+                    || (filters.organizationPrivateCoverage && data.private)
+                )
+            );
+    }
 
     function click(d) {
         var service = getService();
@@ -88,6 +98,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
         var selected = viewer.empty() ? undefined : viewer.datum();
         var selectedImageKey = selected && selected.key;
         var transform = svgPointTransform(projection);
+        var filters = service.filters();
 
         var signs = layer.selectAll('.icon-sign')
             .data(data, function(d) { return d.key; });
@@ -120,6 +131,11 @@ export function svgMapillarySigns(projection, context, dispatch) {
                     : (b === selected) ? -1
                     : b.loc[1] - a.loc[1];  // sort Y
             })
+            .style('display', (d) =>
+                shouldDisplayTile(filters, d)
+                    ? null
+                    : 'none'
+            )
             .attr('transform', transform);
     }
 
