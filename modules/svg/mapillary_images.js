@@ -138,8 +138,6 @@ export function svgMapillaryImages(projection, context, dispatch) {
 
 
     function update() {
-        console.log('update');
-
         var viewer = d3_select('#photoviewer');
         var selected = viewer.empty() ? undefined : viewer.datum();
 
@@ -163,19 +161,19 @@ export function svgMapillaryImages(projection, context, dispatch) {
         traces = traces.enter()
             .append('path')
             .attr('class', 'sequence')
-            .classed('sequence--private-organization', (d) =>
-                d.properties.organization_key && d.properties.private
-            )
-            .classed('sequence--public-organization', (d) =>
-                d.properties.organization_key && !d.properties.private
-            )
+            .classed('sequence--private-organization', function(d) {
+                return d.properties.organization_key && d.properties.private;
+            })
+            .classed('sequence--public-organization', function(d) {
+                return d.properties.organization_key && !d.properties.private;
+            })
             .merge(traces)
             .attr('d', svgPath(projection).geojson)
-            .style('display', (d) =>
-                shouldDisplayTile(filters, d.properties)
+            .style('display', function(d) {
+                return shouldDisplayTile(filters, d.properties)
                     ? null
-                    : 'none'
-            );
+                    : 'none';
+            });
 
 
         var groups = layer.selectAll('.markers').selectAll('.viewfield-group')
@@ -189,12 +187,12 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var groupsEnter = groups.enter()
             .append('g')
             .attr('class', 'viewfield-group')
-            .classed('viewfield-group--private-organization', (d) =>
-                d.organization_key && d.private
-            )
-            .classed('viewfield-group--public-organization', (d) =>
-                d.organization_key && !d.private
-            )
+            .classed('viewfield-group--private-organization', function(d) {
+                return d.organization_key && d.private;
+            })
+            .classed('viewfield-group--public-organization', function(d) {
+                return d.organization_key && !d.private;
+            })
             .on('mouseenter', mouseover)
             .on('mouseleave', mouseout)
             .on('click', click);
@@ -212,11 +210,11 @@ export function svgMapillaryImages(projection, context, dispatch) {
                     : b.loc[1] - a.loc[1];  // sort Y
             })
             .attr('transform', transform)
-            .style('display', (d) =>
-                shouldDisplayTile(filters, d)
+            .style('display', function(d) {
+                return shouldDisplayTile(filters, d)
                     ? null
-                    : 'none'
-            )
+                    : 'none';
+            })
             .select('.viewfield-scale');
 
 

@@ -28,7 +28,7 @@ var viewerjs = 'mapillary-js/mapillary.min.js';
 var maxResults = 1000;
 var tileZoom = 14;
 var tiler = utilTiler().zoomExtent([tileZoom, tileZoom]).skipNullIsland(true);
-var dispatch = d3_dispatch('loadedImages', 'loadedSigns', 'bearingChanged', 'authChanged');
+var dispatch = d3_dispatch('loadedImages', 'loadedSigns', 'loadedPoints', 'bearingChanged', 'authChanged');
 var _mlyFallback = false;
 var _mlyCache;
 var _mlyClicks;
@@ -40,9 +40,9 @@ console.log('Loading Mapillary');
 
 // Mapillary OAuth start
 
-const OAuth = function() {
+var OAuth = function() {
 
-    const setAccessToken = (accessToken) => {
+    var setAccessToken = function(accessToken) {
         if (accessToken) {
             localStorage.setItem('mapillary-access-token', accessToken);
         } else {
@@ -52,11 +52,11 @@ const OAuth = function() {
         dispatch.call('authChanged');
     };
 
-    const getAccessToken = () => {
+    var getAccessToken = function() {
         return localStorage.getItem('mapillary-access-token');
     };
 
-    const urlParams = new URLSearchParams(window.location.search);
+    var urlParams = new URLSearchParams(window.location.search);
 
     if (urlParams.has('access_token') && window.opener) {
         window.opener.postMessage(JSON.stringify({
@@ -72,13 +72,13 @@ const OAuth = function() {
         window.close();
     }
 
-    const onMessage = (event) => {
+    var onMessage = function(event) {
         if (event.origin !== POST_MESSAGE_TARGET_ORIGIN) {
             return;
         }
 
         try {
-            const data = JSON.parse(event.data);
+            var data = JSON.parse(event.data);
             if (data.access_token) {
                 setAccessToken(data.access_token);
             } else {
@@ -92,11 +92,11 @@ const OAuth = function() {
     window.addEventListener('message', onMessage, false);
 
     return {
-        signIn() {
-            const authorizationUrl = `https://www.mapillary.com/connect?client_id=${CLIENT_ID}&response_type=token&scope=private:read+user:read&redirect_uri=${REDIRECT_URI}`;
+        signIn: function() {
+            var authorizationUrl = `https://www.mapillary.com/connect?client_id=${CLIENT_ID}&response_type=token&scope=private:read+user:read&redirect_uri=${REDIRECT_URI}`;
             window.open(authorizationUrl);
         },
-        signOut() {
+        signOut: function() {
             setAccessToken(null);
         },
         setAccessToken,
@@ -104,14 +104,16 @@ const OAuth = function() {
     };
 }();
 
-const API = window.MapillaryApi = {
+var API = window.MapillaryApi = {
     request(url) {
-        return new Promise((resolve, reject) => {
+        return new Promise(function(resolve, reject) {
             d3_request(url)
                 .mimeType('application/json')
                 .header('Authorization', `Bearer ${OAuth.getAccessToken()}`)
-                .response((xhr) => JSON.parse(xhr.responseText))
-                .get((error, response) => {
+                .response(function(xhr) {
+                    return JSON.parse(xhr.responseText);
+                })
+                .get(function(error, response) {
                     if (error) {
                         return reject(error);
                     }
@@ -131,7 +133,7 @@ const API = window.MapillaryApi = {
     },
     hasImagery(organizationKey, _private) {
         return this.images(organizationKey, _private, 1)
-            .then((response) => {
+            .then(function(response) {
                 try {
                     return response.features.length > 0;
                 } catch (err) {
@@ -162,13 +164,21 @@ function reset() {
         if (cache.sequences && cache.sequences.inflight) {
             _forEach(cache.sequences.inflight, abortRequest);
         }
+        if (cache.map_point_features && cache.map_point_features.inflight) {
+            _forEach(cache.map_point_features.inflight, abortRequest);
+        }
+        if (cache.point_features_image_detections && cache.point_features_image_detections.inflight) {
+            _forEach(cache.point_features_image_detections.inflight, abortRequest);
+        }
     }
 
     _mlyCache = {
         images: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {} },
         image_detections: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, forImageKey: {} },
         map_features: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() },
-        sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {}, lineString: {} }
+        sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush(), forImageKey: {}, lineString: {} },
+        map_point_features: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: rbush() },
+        point_features_image_detections: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, forImageKey: {} },
     };
 
     _mlySelectedImage = null;
@@ -290,7 +300,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
                 // An image detection is a semantic pixel area on an image. The area could indicate
                 // sky, trees, sidewalk in the image. A detection can be a polygon, a bounding box, or a point.
                 // Each image_detection feature is a GeoJSON Point (located where the image was taken)
-                } else if (which === 'image_detections') {
+                } else if (which === 'image_detections' || which === 'point_features_image_detections') {
                     d = {
                         key: feature.properties.key,
                         image_key: feature.properties.image_key,
@@ -310,7 +320,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
                 // A map feature is a real world object that can be shown on a map. It could be any object
                 // recognized from images, manually added in images, or added on the map.
                 // Each map feature is a GeoJSON Point (located where the feature is)
-                } else if (which === 'map_features') {
+                } else if (which === 'map_features' || which === 'map_point_features') {
                     d = {
                         loc: loc,
                         key: feature.properties.key,
@@ -336,6 +346,8 @@ function loadNextTilePage(which, currZoom, url, tile) {
                 dispatch.call('loadedImages');
             } else if (which === 'map_features') {
                 dispatch.call('loadedSigns');
+            } else if (which === 'map_point_features') {
+                dispatch.call('loadedPoints');
             }
 
             if (data.features.length === maxResults) {  // more pages to load
@@ -392,42 +404,61 @@ function searchLimited(limit, projection, rtree) {
 }
 
 
-const uiOrganizationFilters = function() {
-    let initialized = false;
-    const state = {};
+var uiOrganizationFilters = function() {
+    var initialized = false;
+    var state = {};
+    var context;
 
     function update() {
-        let header = d3_select('#photoviewer')
-            .selectAll('.mly-header')
-            .data([0]);
-        header = header.enter()
-            .append('div')
-            .attr('class', 'mly-header')
-            .merge(header);
+        var header = d3_select('.mly-header');
 
-        updateSignIn(header);
-        updateOrganizations(header);
-        updateSwitchers(header);
+        header
+            .selectAll('.mly-logo')
+            .data([0])
+            .enter()
+            .append('img')
+            .attr('class', 'mly-logo')
+            .attr('src', context.imagePath('mapillary-logo.svg'));
+
+        var headerControls = header
+            .selectAll('.mly-header-controls')
+            .data([0]);
+        headerControls = headerControls
+            .enter()
+            .append('div')
+            .attr('class', 'mly-header-controls')
+            .merge(headerControls);
+
+        updateSignIn(headerControls);
+        updateOrganizations(headerControls);
+
+        var footer = d3_select('.mly-footer');
+
+        updateSwitchers(footer);
     }
 
     function updateSignIn(selection) {
-        const signIn = selection.selectAll('.mly-sign-in-btn')
+        var signIn = selection.selectAll('.mly-sign-in-btn')
             .data([0]);
 
         signIn.enter()
             .append('div').append('button')
             .attr('class', 'mly-sign-in-btn')
             .merge(signIn)
-                .style('display', () => OAuth.getAccessToken() ? 'none' : null)
+                .style('display', function() {
+                    return OAuth.getAccessToken() ? 'none' : null;
+                })
                 .text('Sign In')
-                .on('click', () => OAuth.signIn());
+                .on('click', function() {
+                    OAuth.signIn();
+                });
     }
 
     function updateOrganizations(selection) {
-        const dropdown = selection.selectAll('.mly-organization-select')
+        var dropdown = selection.selectAll('.mly-organization-select')
             .data([0]);
 
-        const data = state.user && state.organizations
+        var data = state.user && state.organizations
             ? [].concat(
                 [{nice_name: state.user.username, key: 'user'}],
                 state.organizations || [],
@@ -468,26 +499,32 @@ const uiOrganizationFilters = function() {
                 state.user && state.organizations ? null : 'none'
             );
 
-        const options = dropdown.selectAll('option')
-            .data(data, d => d.key);
+        var options = dropdown.selectAll('option')
+            .data(data, function(d) {
+                return d.key;
+            });
 
         options.enter()
             .append('option')
-            .text(d => d.nice_name)
-            .attr('value', d => d.key);
+            .text(function(d) {
+                return d.nice_name;
+            })
+            .attr('value', function(d) {
+                return d.key;
+            });
 
         options.exit().remove();
     }
 
     function updateSwitchers(selection) {
-        let switchesWrapper = selection.selectAll('.mly-switches-wrapper')
+        var switchesWrapper = selection.selectAll('.mly-switches-wrapper')
             .data([0]);
         switchesWrapper = switchesWrapper.enter()
             .append('div')
             .attr('class', 'mly-switches-wrapper')
             .merge(switchesWrapper);
 
-        const data = [{
+        var data = [{
             label: 'Mapillary Coverage Layer',
             color: 'green',
             key: 'mapillaryCoverage',
@@ -496,8 +533,10 @@ const uiOrganizationFilters = function() {
 
         if (_mlyFilters.organization_key) {
             (state.organizations || [])
-                .filter(organization => organization.key === _mlyFilters.organization_key)
-                .forEach(organization => {
+                .filter(function(organization) {
+                    return organization.key === _mlyFilters.organization_key;
+                })
+                .forEach(function(organization) {
                     data.push({
                         label: organization.nice_name,
                         color: 'blue',
@@ -505,7 +544,7 @@ const uiOrganizationFilters = function() {
                         isVisible: !!_mlyFilters.organization_key,
                     });
                     data.push({
-                        label: `${organization.nice_name} Private`,
+                        label: `${organization.nice_name} (Private)`,
                         color: 'purple',
                         key: 'organizationPrivateCoverage',
                         isVisible: !!_mlyFilters.organization_key,
@@ -513,18 +552,22 @@ const uiOrganizationFilters = function() {
                 });
         }
 
-        const labels = switchesWrapper.selectAll('.mly-form-switch')
-            .data(data, d => d.key);
+        var labels = switchesWrapper.selectAll('.mly-form-switch')
+            .data(data, function(d) {
+                return d.key;
+            });
 
         labels.exit().remove();
 
         // ENTER
-        const enterLabels = labels.enter()
+        var enterLabels = labels.enter()
             .append('label')
             .attr('class', 'mly-form-switch');
         enterLabels.append('input')
             .attr('type', 'checkbox')
-            .property('checked', d => _mlyFilters[d.key])
+            .property('checked', function(d) {
+                return _mlyFilters[d.key];
+            })
             .on('change', function(d) {
                 _mlyFilters[d.key] = d3_select(this).property('checked');
 
@@ -534,15 +577,21 @@ const uiOrganizationFilters = function() {
         enterLabels.append('span');
 
         // UPDATE
-        const updateLabels = labels.merge(enterLabels);
+        var updateLabels = labels.merge(enterLabels);
         updateLabels
-            .style('display', d => d.isVisible ? null : 'none');
+            .style('display', function(d) {
+                return d.isVisible ? null : 'none';
+            });
         updateLabels
             .select('i')
-            .attr('class', d => d.color);
+            .attr('class', function(d) {
+                return d.color;
+            });
         updateLabels
             .select('span')
-            .text(d => d.label);
+            .text(function(d) {
+                return d.label;
+            });
     }
 
     function fetchData() {
@@ -550,20 +599,21 @@ const uiOrganizationFilters = function() {
             API.user(),
             API.organizations()
         ])
-        .then(([user, organizations]) => {
+        .then(function([user, organizations]) {
             state.user = user;
             state.organizations = organizations;
         });
     }
 
-    function init() {
+    function init(_context) {
         if (initialized) {
             return;
         }
         initialized = true;
+        context = _context;
 
-        dispatch.on('authChanged', () => {
-            const accessToken = OAuth.getAccessToken();
+        dispatch.on('authChanged', function() {
+            var accessToken = OAuth.getAccessToken();
 
             // reset viewer token
             _mlyViewer.setAuthToken(accessToken);
@@ -615,10 +665,14 @@ export default {
         return searchLimited(limit, projection, _mlyCache.images.rtree);
     },
 
-
     signs: function(projection) {
         var limit = 500;
         return searchLimited(limit, projection, _mlyCache.map_features.rtree);
+    },
+
+    points: function(projection) {
+        var limit = 500;
+        return searchLimited(limit, projection, _mlyCache.map_point_features.rtree);
     },
 
     filters: function() {
@@ -666,19 +720,28 @@ export default {
         loadTiles('image_detections', apibase + 'image_detections?layers=trafficsigns&', projection);
     },
 
+    loadPoints: function(context, projection) {
+        loadTiles('images', apibase + 'images?', projection);
+        loadTiles('map_point_features', apibase + 'map_features?layers=points&min_nbr_image_detections=1&', projection);
+        loadTiles('point_features_image_detections', apibase + 'image_detections?layers=points&', projection);
+    },
 
     loadViewer: function(context) {
         // add mly-wrapper
         var wrap = d3_select('#photoviewer').selectAll('.mly-wrapper')
             .data([0]);
 
-        uiOrganizationFilters.init();
-
         wrap.enter()
             .append('div')
-            .attr('id', 'mly')
             .attr('class', 'photo-wrapper mly-wrapper')
-            .classed('hide', true);
+            .classed('hide', true)
+            .html(
+                '<div class="mly-header"></div>' +
+                '<div class="mly-content" id="mly"></div>' +
+                '<div class="mly-footer"></div>'
+            );
+
+        uiOrganizationFilters.init(context);
 
         // load mapillary-viewercss
         d3_select('head').selectAll('#mapillary-viewercss')
@@ -699,7 +762,11 @@ export default {
 
         // load mapillary signs sprite
         var defs = context.container().select('defs');
-        defs.call(svgDefs(context).addSprites, ['mapillary-sprite']);
+        defs.call(
+            svgDefs(context).addSprites,
+            ['mapillary-sprite', 'mapillary-object-sprite'],
+            false /* don't override colors */
+        );
 
         // Register viewer resize handler
         context.ui().photoviewer.on('resize', function() {
@@ -747,8 +814,8 @@ export default {
             .selectAll('.photo-wrapper')
             .classed('hide', true);
 
-        d3_selectAll('.viewfield-group, .sequence, .icon-sign')
-            .classed('selected', false);
+        d3_selectAll('.viewfield-group, .sequence, .icon-sign, .icon-point')
+            .classed('currentView', false);
 
         return this.setStyles(null, true);
     },
@@ -869,8 +936,8 @@ export default {
         this.setStyles(null, true);
 
         // if signs signs are shown, highlight the ones that appear in this image
-        d3_selectAll('.layer-mapillary-signs .icon-sign')
-            .classed('selected', function(d) {
+        d3_selectAll('.layer-mapillary-signs .icon-sign, .layer-mapillary-points .icon-point')
+            .classed('currentView', function(d) {
                 return _some(d.detections, function(detection) {
                     return detection.image_key === imageKey;
                 });
@@ -954,7 +1021,10 @@ export default {
         var imageKey = d && d.key;
         if (!imageKey) return;
 
-        var detections = _mlyCache.image_detections.forImageKey[imageKey] || [];
+        var detections = [].concat(
+            _mlyCache.image_detections.forImageKey[imageKey] || [],
+            _mlyCache.point_features_image_detections.forImageKey[imageKey] || []
+        );
         detections.forEach(function(data) {
             var tag = makeTag(data);
             if (tag) {
