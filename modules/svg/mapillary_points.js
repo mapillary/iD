@@ -5,7 +5,7 @@ import { svgPointTransform } from './index';
 import { services } from '../services';
 
 
-export function svgMapillarySigns(projection, context, dispatch) {
+export function svgMapillaryPoints(projection, context, dispatch) {
     var throttledRedraw = _throttle(function () { dispatch.call('change'); }, 1000);
     var minZoom = 12;
     var layer = d3_select(null);
@@ -13,16 +13,16 @@ export function svgMapillarySigns(projection, context, dispatch) {
 
 
     function init() {
-        if (svgMapillarySigns.initialized) return;  // run once
-        svgMapillarySigns.enabled = false;
-        svgMapillarySigns.initialized = true;
+        if (svgMapillaryPoints.initialized) return;  // run once
+        svgMapillaryPoints.enabled = false;
+        svgMapillaryPoints.initialized = true;
     }
 
 
     function getService() {
         if (services.mapillary && !_mapillary) {
             _mapillary = services.mapillary;
-            _mapillary.event.on('loadedSigns', throttledRedraw);
+            _mapillary.event.on('loadedPoints', throttledRedraw);
         } else if (!services.mapillary && _mapillary) {
             _mapillary = null;
         }
@@ -51,7 +51,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
 
 
     function editOff() {
-        layer.selectAll('.icon-sign').remove();
+        layer.selectAll('.icon-point').remove();
         layer.style('display', 'none');
     }
 
@@ -70,7 +70,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
         var selectedImageKey = selected && selected.key;
         var imageKey;
 
-        // Pick one of the images the sign was detected in,
+        // Pick one of the images the feature was detected in,
         // preference given to an image already selected.
         d.detections.forEach(function(detection) {
             if (!imageKey || selectedImageKey === detection.image_key) {
@@ -84,33 +84,32 @@ export function svgMapillarySigns(projection, context, dispatch) {
             .showViewer();
     }
 
-
     function update() {
         var service = getService();
-        var data = (service ? service.signs(projection) : []);
+        var data = (service ? service.points(projection) : []);
         var viewer = d3_select('#photoviewer');
         var selected = viewer.empty() ? undefined : viewer.datum();
         var selectedImageKey = selected && selected.key;
         var transform = svgPointTransform(projection);
         var filters = service.filters();
 
-        var signs = layer.selectAll('.icon-sign')
+        var points = layer.selectAll('.icon-point')
             .data(data, function(d) { return d.key; });
 
         // exit
-        signs.exit()
+        points.exit()
             .remove();
 
         // enter
-        var enter = signs.enter()
+        var enter = points.enter()
             .append('use')
-            .attr('class', 'icon-sign')
+            .attr('class', 'icon-point')
             .attr('width', '24px')
             .attr('height', '24px')
             .attr('x', '-12px')
             .attr('y', '-12px')
             .attr('xlink:href', function(d) { return '#' + d.value; })
-            .classed('selected', function(d) {
+            .classed('currentView', function(d) {
                 return _some(d.detections, function(detection) {
                     return detection.image_key === selectedImageKey;
                 });
@@ -118,7 +117,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
             .on('click', click);
 
         // update
-        signs
+        points
             .merge(enter)
             .sort(function(a, b) {
                 return (a === selected) ? 1
@@ -135,11 +134,11 @@ export function svgMapillarySigns(projection, context, dispatch) {
     }
 
 
-    function drawSigns(selection) {
-        var enabled = svgMapillarySigns.enabled;
+    function drawPoints(selection) {
+        var enabled = svgMapillaryPoints.enabled;
         var service = getService();
 
-        layer = selection.selectAll('.layer-mapillary-signs')
+        layer = selection.selectAll('.layer-mapillary-points')
             .data(service ? [0] : []);
 
         layer.exit()
@@ -147,7 +146,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
 
         layer = layer.enter()
             .append('g')
-            .attr('class', 'layer-mapillary-signs')
+            .attr('class', 'layer-mapillary-points')
             .style('display', enabled ? 'block' : 'none')
             .merge(layer);
 
@@ -155,7 +154,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
             if (service && ~~context.map().zoom() >= minZoom) {
                 editOn();
                 update();
-                service.loadSigns(context, projection);
+                service.loadPoints(context, projection);
             } else {
                 editOff();
             }
@@ -163,10 +162,10 @@ export function svgMapillarySigns(projection, context, dispatch) {
     }
 
 
-    drawSigns.enabled = function(_) {
-        if (!arguments.length) return svgMapillarySigns.enabled;
-        svgMapillarySigns.enabled = _;
-        if (svgMapillarySigns.enabled) {
+    drawPoints.enabled = function(_) {
+        if (!arguments.length) return svgMapillaryPoints.enabled;
+        svgMapillaryPoints.enabled = _;
+        if (svgMapillaryPoints.enabled) {
             showLayer();
         } else {
             hideLayer();
@@ -176,11 +175,11 @@ export function svgMapillarySigns(projection, context, dispatch) {
     };
 
 
-    drawSigns.supported = function() {
+    drawPoints.supported = function() {
         return !!getService();
     };
 
 
     init();
-    return drawSigns;
+    return drawPoints;
 }
