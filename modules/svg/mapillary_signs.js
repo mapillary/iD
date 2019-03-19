@@ -56,7 +56,7 @@ export function svgMapillarySigns(projection, context, dispatch) {
     }
 
     function shouldDisplayTile(filters, data) {
-        return (filters.mapillaryCoverage && !data.organization_key && !filters.organization_key)
+        return (!data.organization_key && !filters.organization_key)
             || (filters.organization_key && data.organization_key === filters.organization_key);
     }
 

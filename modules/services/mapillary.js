@@ -93,23 +93,24 @@ var OAuth = function() {
 
     return {
         signIn: function() {
-            var authorizationUrl = `https://www.mapillary.com/connect?client_id=${CLIENT_ID}&response_type=token&scope=private:read+user:read&redirect_uri=${REDIRECT_URI}`;
+            var authorizationUrl = 'https://www.mapillary.com/connect?client_id=' + CLIENT_ID
+                + '&response_type=token&scope=private:read+user:read&redirect_uri=' + REDIRECT_URI;
             window.open(authorizationUrl);
         },
         signOut: function() {
             setAccessToken(null);
         },
-        setAccessToken,
-        getAccessToken
+        setAccessToken: setAccessToken,
+        getAccessToken: getAccessToken
     };
 }();
 
 var API = window.MapillaryApi = {
-    request(url) {
+    request: function(url) {
         return new Promise(function(resolve, reject) {
             d3_request(url)
                 .mimeType('application/json')
-                .header('Authorization', `Bearer ${OAuth.getAccessToken()}`)
+                .header('Authorization', 'Bearer ' + OAuth.getAccessToken())
                 .response(function(xhr) {
                     return JSON.parse(xhr.responseText);
                 })
@@ -122,16 +123,18 @@ var API = window.MapillaryApi = {
                 });
         });
     },
-    user() {
-        return this.request(`${apibase}/me?client_id=${CLIENT_ID}`);
+    user: function() {
+        return this.request(apibase + '/me?client_id=' + CLIENT_ID);
     },
-    organizations() {
-        return this.request(`${apibase}/me/organizations?client_id=${CLIENT_ID}`);
+    organizations: function() {
+        return this.request(apibase + '/me/organizations?client_id=' + CLIENT_ID);
     },
-    images(organizationKey, _private, perPage = 1000) {
-        return this.request(`${apibase}/images?organization_keys=${organizationKey}&private=${_private}&per_page=${perPage}&client_id=${CLIENT_ID}`);
+    images: function(organizationKey, _private, _perPage) {
+        var perPage = _perPage || 1000;
+        return this.request(apibase + '/images?organization_keys=' + organizationKey
+            + '&private=' + _private + '&per_page=' + perPage + '&client_id=' + CLIENT_ID);
     },
-    hasImagery(organizationKey, _private) {
+    hasImagery: function(organizationKey, _private) {
         return this.images(organizationKey, _private, 1)
             .then(function(response) {
                 try {
@@ -244,7 +247,7 @@ function loadNextTilePage(which, currZoom, url, tile) {
     var request = d3_request(nextURL);
     var accessToken = OAuth.getAccessToken();
     if (accessToken) {
-        request = request.header('Authorization', `Bearer ${accessToken}`);
+        request = request.header('Authorization', 'Bearer ' + accessToken);
     }
 
     cache.inflight[id] = request
@@ -544,7 +547,7 @@ var uiOrganizationFilters = function() {
                         isVisible: !!_mlyFilters.organization_key,
                     });
                     data.push({
-                        label: `${organization.nice_name} (Private)`,
+                        label: organization.nice_name + ' (Private)',
                         color: 'purple',
                         key: 'organizationPrivateCoverage',
                         isVisible: !!_mlyFilters.organization_key,
@@ -599,9 +602,9 @@ var uiOrganizationFilters = function() {
             API.user(),
             API.organizations()
         ])
-        .then(function([user, organizations]) {
-            state.user = user;
-            state.organizations = organizations;
+        .then(function(responses) {
+            state.user = responses[0];
+            state.organizations = responses[1];
         });
     }
 
@@ -644,7 +647,7 @@ var uiOrganizationFilters = function() {
     }
 
     return {
-        init,
+        init: init,
     };
 }();
 
@@ -658,7 +661,7 @@ export default {
         this.event = utilRebind(this, dispatch, 'on');
     },
 
-    reset,
+    reset: reset,
 
     images: function(projection) {
         var limit = 500;
