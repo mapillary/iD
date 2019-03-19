@@ -15,6 +15,7 @@ import { svgImproveOSM } from './improveOSM';
 import { svgStreetside } from './streetside';
 import { svgMapillaryImages } from './mapillary_images';
 import { svgMapillarySigns } from './mapillary_signs';
+import { svgMapillaryPoints } from './mapillary_points';
 import { svgOpenstreetcamImages } from './openstreetcam_images';
 import { svgOsm } from './osm';
 import { svgNotes } from './notes';
@@ -35,6 +36,7 @@ export function svgLayers(projection, context) {
         { id: 'streetside', layer: svgStreetside(projection, context, dispatch)},
         { id: 'mapillary-images', layer: svgMapillaryImages(projection, context, dispatch) },
         { id: 'mapillary-signs',  layer: svgMapillarySigns(projection, context, dispatch) },
+        { id: 'mapillary-points',  layer: svgMapillaryPoints(projection, context, dispatch) },
         { id: 'openstreetcam-images', layer: svgOpenstreetcamImages(projection, context, dispatch) },
         { id: 'debug', layer: svgDebug(projection, context, dispatch) },
         { id: 'geolocate', layer: svgGeolocate(projection, context, dispatch) },

@@ -10,6 +10,7 @@ export { svgLayers } from './layers.js';
 export { svgLines } from './lines.js';
 export { svgMapillaryImages } from './mapillary_images.js';
 export { svgMapillarySigns } from './mapillary_signs.js';
+export { svgMapillaryPoints } from './mapillary_points.js';
 export { svgMidpoints } from './midpoints.js';
 export { svgNotes } from './notes.js';
 export { svgMarkerSegments } from './helpers.js';

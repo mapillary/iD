@@ -223,9 +223,125 @@
     background-color: #ffee00;
 }
 
-/* Mapillary filters */
-.mly-header {
-    margin: 5px 0;
+/* Mapillary Point Feature Layer */
+.layer-mapillary-points {
+    pointer-events: none;
+}
+.layer-mapillary-points .icon-point {
+    outline: 2px solid transparent;
+    pointer-events: visible;
+    cursor: pointer;
+}
+.layer-mapillary-points .icon-point:hover {
+    outline: 5px solid #eebb00;
+    background-color: #eebb00;
+}
+.layer-mapillary-points .icon-point.currentView {
+    outline: 5px solid #ffee00;
+    background-color: #ffee00;
+}
+
+
+/* OpenStreetCam Image Layer */
+.layer-openstreetcam-images {
+    pointer-events: none;
+}
+.layer-openstreetcam-images .viewfield-group * {
+    fill: #20c4ff;
+}
+.layer-openstreetcam-images .sequence {
+    stroke: #20c4ff;
+}
+
+
+/* Streetside Viewer (pannellum) */
+.ms-wrapper .photo-attribution .image-link {
+    display: block;
+}
+.ms-wrapper .photo-attribution .attribution-row {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5px;
+}
+.ms-wrapper .photo-attribution .image-view-link {
+    text-align: left;
+    margin: 0 5px;
+}
+.ms-wrapper .photo-attribution .image-report-link {
+    text-align: right;
+}
+
+.ms-wrapper .photo-attribution a:active,
+.ms-wrapper .photo-attribution a:hover {
+    color: #0fffc4;
+}
+
+.ms-wrapper .pnlm-compass.pnlm-control {
+    width: 26px;
+    height: 26px;
+    left: 4px;
+    top: 60px;
+    background-size: contain;
+    background-repeat: no-repeat no-repeat;
+}
+
+label.streetside-hires {
+    cursor: pointer;
+}
+.streetside-hires span {
+    margin-top: 2px;
+}
+.streetside-hires input[type="checkbox"] {
+    float: left;
+    width: 12px;
+    height: 12px;
+    margin: 0 5px;
+}
+
+
+/* Mapillary viewer */
+#mly .domRenderer .TagSymbol {
+    font-size: 10px;
+    background-color: rgba(0,0,0,0.4);
+    padding: 0 4px;
+    border-radius: 4px;
+    top: -25px;
+}
+#mly .domRenderer .Attribution {
+    /* we will roll our own to avoid async update issues like #4526 */
+    display: none;
+}
+
+.mly-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.mly-wrapper .mly-content {
+    flex: 1;
+}
+
+.mly-wrapper .photo-attribution a:active,
+.mly-wrapper .photo-attribution a:hover {
+    color: #35af6d;
+}
+
+.mly-wrapper .mapillary-js-dom {
+    z-index: 9;
+}
+
+.mly-wrapper .mly-header {
+    margin-right: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+img.mly-logo {
+    height: 40px;
+    width: auto;
 }
 
 .mly-sign-in-btn {
@@ -309,92 +425,6 @@
 
 .mly-form-switch input:checked+i::before {
     left: 0.7rem;
-}
-
-
-/* OpenStreetCam Image Layer */
-.layer-openstreetcam-images {
-    pointer-events: none;
-}
-.layer-openstreetcam-images .viewfield-group * {
-    fill: #20c4ff;
-}
-.layer-openstreetcam-images .sequence {
-    stroke: #20c4ff;
-}
-
-
-/* Streetside Viewer (pannellum) */
-.ms-wrapper .photo-attribution .image-link {
-    display: block;
-}
-.ms-wrapper .photo-attribution .attribution-row {
-    display: flex;
-    flex-flow: row nowrap;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 5px;
-}
-.ms-wrapper .photo-attribution .image-view-link {
-    text-align: left;
-    margin: 0 5px;
-}
-.ms-wrapper .photo-attribution .image-report-link {
-    text-align: right;
-}
-
-.ms-wrapper .photo-attribution a:active,
-.ms-wrapper .photo-attribution a:hover {
-    color: #0fffc4;
-}
-
-.ms-wrapper .pnlm-compass.pnlm-control {
-    width: 26px;
-    height: 26px;
-    left: 4px;
-    top: 60px;
-    background-size: contain;
-    background-repeat: no-repeat no-repeat;
-}
-
-label.streetside-hires {
-    cursor: pointer;
-}
-.streetside-hires span {
-    margin-top: 2px;
-}
-.streetside-hires input[type="checkbox"] {
-    float: left;
-    width: 12px;
-    height: 12px;
-    margin: 0 5px;
-}
-
-
-/* Mapillary viewer */
-#mly .domRenderer .TagSymbol {
-    font-size: 10px;
-    background-color: rgba(0,0,0,0.4);
-    padding: 0 4px;
-    border-radius: 4px;
-    top: -25px;
-}
-#mly .domRenderer .Attribution {
-    /* we will roll our own to avoid async update issues like #4526 */
-    display: none;
-}
-
-.mly-wrapper {
-    /* height: 200px; */
-}
-
-.mly-wrapper .photo-attribution a:active,
-.mly-wrapper .photo-attribution a:hover {
-    color: #35af6d;
-}
-
-.mly-wrapper .mapillary-js-dom {
-    z-index: 9;
 }
 
 
