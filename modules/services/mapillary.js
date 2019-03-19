@@ -421,7 +421,7 @@ var uiOrganizationFilters = function() {
             .enter()
             .append('img')
             .attr('class', 'mly-logo')
-            .attr('src', context.imagePath('mapillary-logo.svg'));
+            .attr('src', context.imagePath('mapillary-logo.png'));
 
         var headerControls = header
             .selectAll('.mly-header-controls')
