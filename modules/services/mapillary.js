@@ -231,13 +231,18 @@ function loadNextTilePage(which, currZoom, url, tile) {
     var rect = tile.extent.rectangle();
     var maxPages = maxPageAtZoom(currZoom);
     var nextPage = cache.nextPage[tile.id] || 0;
+    var queryString = {
+        per_page: maxResults,
+        page: nextPage,
+        client_id: CLIENT_ID,
+        bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
+    };
+    var accessToken = OAuth.getAccessToken();
+    if (accessToken) {
+        queryString.token = OAuth.getAccessToken();
+    }
     var nextURL = cache.nextURL[tile.id] || url +
-        utilQsString({
-            per_page: maxResults,
-            page: nextPage,
-            client_id: CLIENT_ID,
-            bbox: [rect[0], rect[1], rect[2], rect[3]].join(','),
-        });
+        utilQsString(queryString);
 
     if (nextPage > maxPages) return;
 
@@ -245,10 +250,6 @@ function loadNextTilePage(which, currZoom, url, tile) {
     if (cache.loaded[id] || cache.inflight[id]) return;
 
     var request = d3_request(nextURL);
-    var accessToken = OAuth.getAccessToken();
-    if (accessToken) {
-        request = request.header('Authorization', 'Bearer ' + accessToken);
-    }
 
     cache.inflight[id] = request
         .mimeType('application/json')
