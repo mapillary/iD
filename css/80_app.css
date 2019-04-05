@@ -436,39 +436,49 @@ button[disabled].action:hover {
     flex-flow: row nowrap;
     justify-content: space-between;
     position: absolute;
-    padding: 10px;
+    padding: 10px 5px 0px 5px;
     left: 0;
     top: 0;
     right: 0;
-    height: 60px;
-    z-index: 9;
+    z-index: 101;
 }
-
-.tool-group {
+#bar .toolbar-item {
+    display: flex;
+    flex: 0 1 auto;
+    flex-flow: column wrap;
+    justify-content: center;
+    position: relative;
+}
+#bar .toolbar-item .item-content {
     display: flex;
     flex: 0 1 auto;
     flex-flow: row nowrap;
-    width: 100%;
-}
-.tool-group.leading-area {
-    justify-content: flex-start;
-}
-.tool-group.leading-area,
-.tool-group.trailing-area {
-    flex-shrink: 2;
-}
-.tool-group.center-area {
     justify-content: center;
-}
-.tool-group.trailing-area {
-    justify-content: flex-end;
-}
-
-.tool-group > div:not(:empty) {
-    display: flex;
+    position: relative;
+    height: 40px;
+    width: auto;
     margin: 0 5px;
 }
-.tool-group button.bar-button {
+#bar .toolbar-item .item-label {
+    text-align: center;
+    font-size: 11px;
+    white-space: nowrap;
+    margin: 1px 2px 2px 2px;
+}
+#bar .toolbar-item.spacer {
+    width: 100%;
+    flex-grow: 2;
+}
+#bar .toolbar-item:first-child {
+    justify-content: flex-start;
+}
+#bar .toolbar-item:last-child {
+    justify-content: flex-end;
+}
+#bar .toolbar-item:empty:not(.spacer) {
+    display: none;
+}
+button.bar-button {
     flex: 0 0 auto;
     flex-flow: row nowrap;
     align-items: center;
@@ -477,58 +487,29 @@ button[disabled].action:hover {
     white-space: nowrap;
     display: flex;
 }
-.tool-group button.bar-button .icon {
+button.bar-button .icon {
     flex: 0 0 20px;
 }
-.tool-group button.bar-button .label {
+button.bar-button .label {
     flex: 0 1 auto;
     padding: 0 5px;
 }
 
-.tool-group button.dragging {
+button.bar-button.dragging {
     opacity: 0.75;
     z-index: 200;
 }
-.tool-group button.dragging .tooltip {
+button.bar-button.dragging .tooltip {
     display: none;
 }
-.tool-group button.dragging.removing {
+button.bar-button.dragging.removing {
     cursor: url(img/cursor-select-remove.png), pointer;
 }
 
 button.save .count {
     display: inline-block;
-    border: 0px solid #ccc;
-    border-left-width: 1px;
-    padding: 0px 0px 0px 8px;
     min-width: 32px;
     text-align: center;
-}
-[dir='rtl'] button.save .count {
-    border-left-width: 0px;
-    border-right-width: 1px;
-    padding: 0px 8px 0px 0px;
-}
-button.save.disabled .count {
-    border: 0px solid rgba(0,0,0,0.25);
-    border-left-width: 1px;
-}
-[dir='rtl'] button.save.disabled .count {
-    border-left-width: 0px;
-    border-right-width: 1px;
-    padding: 0px 8px 0px 0px;
-}
-#bar.narrow button.save .count {
-    padding: 0px;
-}
-
-button.save .label {
-    margin-right: 3px;
-    margin-left: 0;
-}
-[dir='rtl'] button.save .label {
-    margin-left: 3px;
-    margin-right: 0;
 }
 
 .help-wrap svg.icon.pre-text.add-note,
@@ -575,9 +556,6 @@ button.add-note svg.icon {
 }
 
 
-#bar.narrow .tool-group {
-    width: unset;
-}
 #bar.narrow .spinner,
 #bar.narrow button.bar-button .label {
     display: none;
@@ -587,25 +565,37 @@ button.add-note svg.icon {
     border-right-width: 0;
 }
 
+[dir='ltr'] .undo-redo button:first-of-type {
+    margin-right: 1px;
+}
+[dir='rtl'] .undo-redo button:first-of-type {
+    margin-left: 1px;
+}
+
 /* Add a feature search bar
 ------------------------------------------------------- */
 
 .search-add {
-    width: 100%;
+    width: 200%;
     justify-content: center;
     position: relative;
+    min-width: 150px;
+    max-width: 325px;
 }
 .search-add .search-wrap {
     position: relative;
     width: 100%;
-    min-width: 150px;
-    max-width: 300px;
+}
+[dir='ltr'] .search-add .search-wrap {
     border-radius: 20px 4px 4px 20px;
+}
+[dir='rtl'] .search-add .search-wrap {
+    border-radius: 4px 20px 20px 4px;
 }
 .search-add .search-wrap.focused .tooltip {
     display: none;
 }
-.search-add .search-wrap:nth-last-child(2) {
+.search-add .search-wrap:last-child {
     border-radius: 20px;
 }
 .search-add input[type='search'] {
@@ -635,31 +625,67 @@ button.add-note svg.icon {
     right: 10px;
 }
 .search-add .popover {
-    max-height: 600px;
-    width: 100%;
-    position: absolute;
-    top: 44px;
     border: none;
     border-radius: 6px;
+    position: absolute;
+    max-height: 600px;
+    top: 44px;
+    width: 200%;
+    max-width: 325px;
+    margin: auto;
+    left: auto;
+    right: auto;
+    z-index: 300;
+}
+.search-add .popover .popover-content {
     overflow-y: auto;
-    max-width: 350px;
+    height: 100%;
+    max-height: 60vh;
+}
+.search-add .popover,
+.search-add .popover .popover-content {
     /* ensure corners are rounded in Chrome */
     -webkit-mask-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA5JREFUeNpiYGBgAAgwAAAEAAGbA+oJAAAAAElFTkSuQmCC);
+}
+.search-add .popover .popover-footer {
+    padding: 5px 10px 5px 10px;
+    background: #f6f6f6;
+    border-top: 1px solid #DCDCDC;
+    display: flex;
+}
+.search-add .popover .popover-footer .message {
+    color: #666666;
+    flex-grow: 1;
+}
+.search-add .popover .popover-footer button.filter {
+    height: 20px;
+    background: transparent;
+    color: #666;
+}
+.search-add .popover .popover-footer button.filter.active {
+    color: #7092ff;
+}
+.search-add .popover .popover-footer button.filter:hover {
+    color: #333;
+}
+.search-add .popover .popover-footer button.filter.active:hover {
+    color: #597be7;
 }
 .search-add .popover::-webkit-scrollbar {
     /* don't overlap rounded corners */
     background: transparent;
 }
 .search-add .popover .list {
-    max-height: 70vh;
+    height: 100%;
 }
-.search-add .list-item {
+.search-add .list-item > .row {
     display: flex;
     position: relative;
     padding: 2px;
 }
-.search-add .list-item:not(:last-of-type),
-.search-add .subsection .list-item {
+.search-add .list-item:not(:last-of-type) .row,
+.search-add .subsection.subitems .list-item .row,
+.search-add .subsection > .tag-reference-body  {
     border-bottom: 1px solid #DCDCDC;
 }
 .search-add .list-item .label {
@@ -687,7 +713,7 @@ button.add-note svg.icon {
 [dir='rtl'] .search-add .list-item .label .icon.inline {
     margin-right: 0;
 }
-.search-add .list-item > *:not(button) {
+.search-add .list-item .row > *:not(button) {
     pointer-events: none;
 }
 .search-add .list-item button.choose {
@@ -711,6 +737,10 @@ button.add-note svg.icon {
 .search-add .subsection .list-item button.choose {
     opacity: 0.85;
 }
+.search-add .subsection .tag-reference-body {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 10px;
+}
 .search-add .list-item button.accessory {
     position: relative;
     flex: 0 0 auto;
@@ -722,34 +752,41 @@ button.add-note svg.icon {
 .search-add .list-item button.accessory:hover {
     color: #666;
 }
+.search-add .list-item button.tag-reference-open path {
+    fill: #000;
+}
 .search-add .subsection {
     background-color: #CBCBCB;
 }
-[dir='ltr'] .search-add .subsection {
+[dir='ltr'] .search-add .subitems {
     padding-left: 6px;
 }
-[dir='rtl'] .search-add .subsection {
+[dir='rtl'] .search-add .subitems {
     padding-right: 6px;
 }
-.search-add button.add-preset {
+
+/* Add a preset mode buttons
+------------------------------------------------------- */
+
+button.bar-button.add-preset {
     border-radius: 4px;
 }
-[dir='ltr'] .search-add button.add-preset {
+[dir='ltr'] button.bar-button.add-preset {
     margin-left: 1px;
 }
-[dir='rtl'] .search-add button.add-preset {
+[dir='rtl'] button.bar-button.add-preset {
     margin-right: 1px;
 }
-[dir='ltr'] .search-add button.add-preset.first-recent {
-    margin-left: 5px;
+[dir='ltr'] button.bar-button.add-preset.first-recent {
+    margin-left: 10px;
 }
-[dir='rtl'] .search-add button.add-preset.first-recent {
-    margin-right: 5px;
+[dir='rtl'] button.bar-button.add-preset.first-recent {
+    margin-right: 10px;
 }
-.search-add button.add-preset:not(.add-generic-preset) {
+button.bar-button.add-preset {
     padding: 0;
 }
-.search-add button.add-preset.disabled .preset-icon-container {
+button.add-preset.disabled .preset-icon-container {
     opacity: 0.5;
 }
 /* Header for modals / panes
@@ -1119,24 +1156,17 @@ a.hide-toggle {
 
 .preset-list-button-wrap {
     position: relative;
-    height: 60px;
+    height: 62px;
     display: flex;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .preset-list-button {
     width: 100%;
     height: 100%;
     position: relative;
-    border: 1px solid #ccc;
     display: flex;
-}
-[dir='ltr'] .preset-list-button-wrap:not(.category) .preset-list-button {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-[dir='rtl'] .preset-list-button-wrap:not(.category) .preset-list-button {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
 }
 
 .preset-list.filtered .preset-list-item:first-child .preset-list-button {
@@ -1148,11 +1178,20 @@ a.hide-toggle {
     width: 60px;
     height: 60px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .preset-icon-container.small {
     width: 40px;
     height: 40px;
     flex: 0 0 auto;
+}
+.preset-icon-container img.image-icon {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 2px;
 }
 
 .preset-icon-point-border path {
@@ -1222,7 +1261,6 @@ a.hide-toggle {
     height:100%;
     position: absolute;
     z-index: 1;
-    transform: scale(0.48);
 }
 .preset-icon .icon {
     position: absolute;
@@ -1231,25 +1269,32 @@ a.hide-toggle {
     right: 0;
     width: 100%;
     height: 100%;
+    transform: scale(0.48);
 }
-.preset-icon-container.small .preset-icon.point-geom {
+.preset-icon-container.small .preset-icon.point-geom .icon {
     transform: translateY(-7%) scale(0.27);
 }
-.preset-icon.framed {
+.preset-icon-container.small .preset-icon.point-geom.preset-icon-iD .icon {
+    transform: translateY(-9%) scale(0.5);
+}
+.preset-icon.framed .icon {
     transform: scale(0.4);
 }
-.preset-icon.framed.line-geom {
+.preset-icon.framed.line-geom .icon {
     top: 20%;
     transform: translateY(-30%) scale(0.4);
 }
-.preset-icon-iD {
+.preset-icon-iD .icon {
     transform: scale(1);
 }
-.preset-icon-iD.framed {
+.preset-icon-iD.framed .icon {
     transform: scale(0.74);
 }
-.preset-icon-iD.framed.line-geom {
+.preset-icon-iD.framed.line-geom .icon {
     transform: translateY(-30%) scale(0.74);
+}
+.preset-icon-container.fallback .preset-icon .icon {
+    transform: scale(0.5) !important;
 }
 
 .preset-list-button .label {
@@ -1300,20 +1345,17 @@ a.hide-toggle {
 .preset-list-item button.preset-favorite-button,
 .preset-list-item button.tag-reference-button {
     height: 100%;
-    border: 1px solid #ccc;
     width: 32px;
     flex: 0 0 auto;
     background: #f6f6f6;
 }
 [dir='ltr'] .preset-list-item button.preset-favorite-button,
 [dir='ltr'] .preset-list-item button.tag-reference-button {
-    border-left: none;
-    border-radius: 0;
+    border-left: 1px solid #ccc;
 }
 [dir='rtl'] .preset-list-item button.preset-favorite-button,
 [dir='rtl'] .preset-list-item button.tag-reference-button {
-    border-right: none;
-    border-radius: 0;
+    border-right: 1px solid #ccc;
 }
 [dir='ltr'] .preset-list-item button:last-child {
     border-radius: 0 4px 4px 0;
@@ -1337,17 +1379,6 @@ button.preset-favorite-button .icon {
 }
 button.preset-favorite-button.active .icon {
     fill-opacity: inherit;
-}
-
-img.tag-reference-wiki-image {
-    float: right;
-    width: 33.3333%;
-    border-radius: 4px;
-    margin: 10px 5px 15px 10px;
-}
-[dir='rtl'] img.tag-reference-wiki-image {
-    float: left;
-    margin: 10px 10px 15px 5px;
 }
 
 
@@ -1560,7 +1591,7 @@ img.tag-reference-wiki-image {
 
 /* Buttons inside fields */
 .form-field-button {
-    flex: 0 0 32px;
+    flex: 0 0 auto;
     height: 30px;
     width: 32px;
     position: relative;
@@ -1604,7 +1635,7 @@ img.tag-reference-wiki-image {
 
 /* Field - lists with labeled input items
 ------------------------------------------------------- */
-.form-field ul.labeled-inputs {
+.form-field ul.rows {
     flex: 1 1 auto;
     border: 1px solid #ccc;
     border-top: 0;
@@ -1612,32 +1643,36 @@ img.tag-reference-wiki-image {
     overflow: hidden;
     width: 100%;
 }
-.form-field ul.labeled-inputs li {
+.form-field ul.rows li {
     border-top: 1px solid #ccc;
+}
+.form-field ul.rows li:first-child {
+    border-top: 0;
+}
+.form-field ul.rows li {
     display: flex;
     flex-flow: row nowrap;
 }
-.form-field ul.labeled-inputs li:first-child {
-    border-top: 0;
-}
-.form-field ul.labeled-inputs li > span,
-.form-field ul.labeled-inputs li > div {
+.form-field ul.rows li.labeled-input > span,
+.form-field ul.rows li.labeled-input > div {
     flex: 1 1 auto;
     width: 100%;
     border-radius: 0;
 }
-.form-field ul.labeled-inputs li input {
+.form-field ul.rows li input {
     border-radius: 0;
+    border-width: 0;
     width: 100%;
 }
-.form-field ul.labeled-inputs li input,
-.form-field ul.labeled-inputs li button {
+.form-field ul.rows li button {
     border-width: 0;
+}
+[dir='ltr'] .form-field ul.rows li.labeled-input input,
+[dir='ltr'] .form-field ul.rows li button {
     border-left-width: 1px;
 }
-[dir='rtl'] .form-field ul.labeled-inputs li input,
-[dir='rtl'] .form-field ul.labeled-inputs li button {
-    border-left-width: 0;
+[dir='rtl'] .form-field ul.rows li.labeled-input input,
+[dir='rtl'] .form-field ul.rows li button {
     border-right-width: 1px;
 }
 
@@ -1652,7 +1687,7 @@ img.tag-reference-wiki-image {
     border-top: 0px;
     border-radius: 0 0 4px 4px;
 }
-.structure-extras-wrap > ul.labeled-inputs {
+.structure-extras-wrap > ul.rows {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -2027,10 +2062,12 @@ img.tag-reference-wiki-image {
 [dir='rtl'] .wiki-title-container > input.wiki-title {
     border-radius: 0 0 4px 0;
 }
-.wiki-title-container > button.wiki-link {
+.wiki-title-container > button.wiki-link,
+.form-field-wikidata ul.rows li:last-child button.form-field-button:last-child {
     border-radius: 0 0 4px 0;
 }
-[dir='rtl'] .wiki-title-container > button.wiki-link {
+[dir='rtl'] .wiki-title-container > button.wiki-link,
+[dir='rtl'] .form-field-wikidata ul.rows li:last-child button.form-field-button:last-child {
     border-radius: 0 0 0 4px;
 }
 
@@ -2187,7 +2224,7 @@ div.combobox {
     display: inline-block;
     position: relative;
     height: 30px;
-    width: 30px;
+    width: 30px !important;
     margin-left: -30px;
     vertical-align: top;
     cursor: pointer;
@@ -2479,15 +2516,29 @@ div.combobox {
     flex: 1 1 auto;
     width: 100%;
     overflow: hidden;
+    display: none;
+    padding-top: 10px;
 }
 .tag-reference-body.expanded {
     padding-bottom: 10px;
+    display: inline-block;
 }
 .tag-reference-description {
-    margin: 10px 5px;
+
 }
 .tag-reference-link {
     display: block;
+}
+
+img.tag-reference-wiki-image {
+    float: right;
+    width: 33.3333%;
+    border-radius: 4px;
+    margin: 0 0 0 5px;
+}
+[dir='rtl'] img.tag-reference-wiki-image {
+    float: left;
+    margin: 0 5px 0 0;
 }
 
 .preset-list .tag-reference-body {
@@ -2511,9 +2562,17 @@ div.combobox {
 
 /* Raw Member / Membership Editor
 ------------------------------------------------------- */
-.raw-member-editor .member-list li:first-child,
-.raw-membership-editor .member-list li:first-child {
+
+.raw-member-editor .member-list,
+.raw-membership-editor .member-list {
     padding-top: 10px;
+}
+.raw-member-editor .member-list li,
+.raw-membership-editor .member-list li {
+    position: relative;
+    border-radius: 4px;
+    margin: 0;
+    padding-bottom: 10px;
 }
 .raw-member-editor .member-row .member-entity-name,
 .raw-membership-editor .member-row .member-entity-name {
@@ -2548,6 +2607,17 @@ div.combobox {
     border-radius: 4px 4px 0 0;
     border: 0;
 }
+
+.raw-member-editor .member-row.dragging {
+    opacity: 0.75;
+    z-index: 3000;
+    /*
+    -webkit-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.3);
+    -moz-box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.3);
+    box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.3);
+    */
+}
+.raw-member-editor .member-row.dragging
 
 /* preserve extra space at bottom of inspector to allow for dropdown options - #5280 */
 .raw-membership-editor.inspector-inner {
@@ -2769,6 +2839,16 @@ input.key-trap {
     position: absolute;
     top: 0px;
 }
+.preset-icon-28 {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    margin: auto;
+}
+.preset-icon-28 .icon {
+    width: 28px;
+    height: 28px;
+}
 
 .note-header-label,
 .error-header-label {
@@ -2947,7 +3027,7 @@ input.key-trap {
 ------------------------------------------------------- */
 .map-controls {
     right: 0;
-    top: 132px;
+    top: 141px;
     width: 40px;
     position: fixed;
     z-index: 100;
@@ -3114,6 +3194,13 @@ div.full-screen > button:hover {
     display: block;
     padding: 5px 10px;
     cursor: pointer;
+}
+
+[dir='ltr'] .layer-list .indented label {
+    padding-left: 24px;
+}
+[dir='rtl'] .layer-list .indented label {
+    padding-right: 24px;
 }
 
 .layer-list label > span {
@@ -3488,7 +3575,7 @@ ul.issue-fix-list button {
 ------------------------------------------------------- */
 .map-pane {
     position: absolute;
-    top: 60px;
+    top: 71px;
     bottom: 30px;
     right: 0;
     width: 100%;
@@ -4280,7 +4367,7 @@ img.tile-debug {
 }
 
 .shaded {
-    z-index: 49;
+    z-index: 5000;
     position: absolute;
     top: 0;
     bottom: 0;
@@ -4792,7 +4879,7 @@ svg.mouseclick use.right {
 }
 .tooltip.in {
     opacity: 0.9;
-    z-index: 1030;
+    z-index: 5000;
     height: auto;
     display: block;
 }
@@ -4982,12 +5069,33 @@ svg.mouseclick use.right {
 }
 
 /* Move over tooltips that are near the edge of screen */
-button.sidebar-toggle .tooltip .tooltip-arrow {
-    left: 36px;
+[dir='ltr'] .sidebar-toggle .tooltip {
+    left: 0 !important;
 }
-[dir='rtl'] button.sidebar-toggle .tooltip .tooltip-arrow {
+[dir='rtl'] .sidebar-toggle .tooltip {
+    right: 0 !important;
+}
+[dir='ltr'] .sidebar-toggle .tooltip .tooltip-arrow {
+    left: 20px;
+}
+[dir='rtl'] .sidebar-toggle .tooltip .tooltip-arrow {
+    right: 20px;
+}
+[dir='ltr'] .save .tooltip {
+    left: auto !important;
+    right: 0 !important;
+}
+[dir='rtl'] .save .tooltip {
+    right: auto !important;
+    left: 0 !important;
+}
+[dir='ltr'] .save .tooltip .tooltip-arrow {
     left: auto;
     right: 36px;
+}
+[dir='rtl'] .save .tooltip .tooltip-arrow {
+    right: auto;
+    left: 36px;
 }
 
 li:first-of-type .badge .tooltip,

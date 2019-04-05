@@ -9,6 +9,7 @@ import {
 import { t, textDirection } from '../util/locale';
 import { actionChangePreset } from '../actions/index';
 import { operationDelete } from '../operations/index';
+import { services } from '../services';
 import { svgIcon } from '../svg/index';
 import { tooltip } from '../util/tooltip';
 import { uiPresetIcon } from './preset_icon';
@@ -21,6 +22,7 @@ export function uiPresetList(context) {
     var _entityID;
     var _currentPreset;
     var _autofocus = false;
+    var geocoder = services.geocoder;
 
 
     function presetList(selection) {
@@ -99,12 +101,29 @@ export function uiPresetList(context) {
             var value = search.property('value');
             list.classed('filtered', value.length);
             if (value.length) {
-                var results = presets.search(value, geometry);
-                message.text(t('inspector.results', {
-                    n: results.collection.length,
-                    search: value
-                }));
-                list.call(drawList, results);
+                var entity = context.entity(_entityID);
+                if (geocoder && entity) {
+                    var center = entity.extent(context.graph()).center();
+                    geocoder.countryCode(center, function countryCallback(err, countryCode) {
+                        // get the input value again because it may have changed
+                        var currentValue = search.property('value');
+
+                        if (!currentValue.length) return;
+
+                        var results;
+                        if (!err && countryCode) {
+                            countryCode = countryCode.toLowerCase();
+                            results = presets.search(currentValue, geometry, countryCode);
+                        } else {
+                            results = presets.search(currentValue, geometry);
+                        }
+                        message.text(t('inspector.results', {
+                            n: results.collection.length,
+                            search: currentValue
+                        }));
+                        list.call(drawList, results);
+                    });
+                }
             } else {
                 list.call(drawList, context.presets().defaults(geometry, 36));
                 message.text(t('inspector.choose'));

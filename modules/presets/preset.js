@@ -1,13 +1,10 @@
-import _clone from 'lodash-es/clone';
-import _omit from 'lodash-es/omit';
-import _uniq from 'lodash-es/uniq';
-
 import { t } from '../util/locale';
 import { areaKeys } from '../core/context';
+import { utilArrayUniq, utilObjectOmit } from '../util';
 
 
 export function presetPreset(id, preset, fields, visible, rawPresets) {
-    preset = _clone(preset);
+    preset = Object.assign({}, preset);   // shallow copy
 
     preset.id = id;
 
@@ -29,8 +26,8 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
             var f = fields[fieldID];
             if (f.key) {
                 if (preset.tags[f.key] !== undefined &&
-                    // inherit anyway if multiple values are allowed
-                    f.type !== 'multiCombo' && f.type !== 'semiCombo') {
+                    // inherit anyway if multiple values are allowed or just a checkbox
+                    f.type !== 'multiCombo' && f.type !== 'semiCombo' && f.type !== 'check') {
                     return false;
                 }
             }
@@ -78,7 +75,7 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
                 fieldIDs = inheritedFieldIDs(preset.parentPresetID(), prop);
             }
             // resolve duplicate fields
-            fieldIDs = _uniq(fieldIDs);
+            fieldIDs = utilArrayUniq(fieldIDs);
 
             // update this preset with the results
             preset[prop] = fieldIDs;
@@ -128,9 +125,16 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
         return score;
     };
 
+    var _textCache = {};
 
     preset.t = function(scope, options) {
-        return t('presets.presets.' + id + '.' + scope, options);
+        var textID = 'presets.presets.' + id + '.' + scope;
+
+        if (_textCache[textID]) return _textCache[textID];
+
+        var text = t(textID, options);
+        _textCache[textID] = text;
+        return text;
     };
 
 
@@ -177,7 +181,7 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
         }
 
         // Lookup documentation on OSM Wikibase...
-        var key = reference.key || Object.keys(_omit(preset.tags, 'name'))[0];
+        var key = reference.key || Object.keys(utilObjectOmit(preset.tags, 'name'))[0];
         var value = reference.value || preset.tags[key];
 
         if (geometry === 'relation' && key === 'type') {
@@ -199,7 +203,7 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
 
     preset.removeTags = preset.removeTags || preset.tags || {};
     preset.unsetTags = function(tags, geometry) {
-        tags = _omit(tags, Object.keys(preset.removeTags));
+        tags = utilObjectOmit(tags, Object.keys(preset.removeTags));
 
         for (var f in preset.fields) {
             var field = preset.fields[f];
@@ -214,11 +218,11 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
 
 
     preset.addTags = preset.addTags || preset.tags || {};
-    preset.setTags = function(tags, geometry) {
+    preset.setTags = function(tags, geometry, skipFieldDefaults) {
         var addTags = preset.addTags;
         var k;
 
-        tags = _clone(tags);
+        tags = Object.assign({}, tags);   // shallow copy
 
         for (k in addTags) {
             if (addTags[k] === '*') {
@@ -249,7 +253,7 @@ export function presetPreset(id, preset, fields, visible, rawPresets) {
                 }
             }
         }
-        if (geometry) {
+        if (geometry && !skipFieldDefaults) {
             for (var f in preset.fields) {
                 var field = preset.fields[f];
                 if (field.matchGeometry(geometry) && field.key && !tags[field.key] && field.default) {

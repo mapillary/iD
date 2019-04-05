@@ -1,17 +1,7 @@
-import _clone from 'lodash-es/clone';
-import _cloneDeep from 'lodash-es/cloneDeep';
-
 import { actionDeleteNode } from './delete_node';
 import {
-    geoVecAdd,
-    geoVecEqual,
-    geoVecInterp,
-    geoVecLength,
-    geoVecNormalize,
-    geoVecNormalizedDot,
-    geoVecProject,
-    geoVecScale,
-    geoVecSubtract
+    geoVecAdd, geoVecEqual, geoVecInterp, geoVecLength, geoVecNormalize,
+    geoVecNormalizedDot, geoVecProject, geoVecScale, geoVecSubtract
 } from '../geo';
 
 
@@ -33,7 +23,7 @@ export function actionOrthogonalize(wayID, projection, vertexID) {
         graph = graph.replace(way);
 
         var isClosed = way.isClosed();
-        var nodes = _clone(graph.childNodes(way));
+        var nodes = graph.childNodes(way).slice();  // shallow copy
         if (isClosed) nodes.pop();
 
         if (vertexID !== undefined) {
@@ -93,10 +83,10 @@ export function actionOrthogonalize(wayID, projection, vertexID) {
             }
 
             // Orthogonalize the simplified shape
-            var bestPoints = _cloneDeep(simplified);
-            var originalPoints = _cloneDeep(simplified);
-            score = Infinity;
+            var bestPoints = clonePoints(simplified);
+            var originalPoints = clonePoints(simplified);
 
+            score = Infinity;
             for (i = 0; i < 1000; i++) {
                 motions = simplified.map(calcMotion);
 
@@ -105,7 +95,7 @@ export function actionOrthogonalize(wayID, projection, vertexID) {
                 }
                 var newScore = calcScore(simplified, isClosed);
                 if (newScore < score) {
-                    bestPoints = _cloneDeep(simplified);
+                    bestPoints = clonePoints(simplified);
                     score = newScore;
                 }
                 if (score < epsilon) {
@@ -153,6 +143,13 @@ export function actionOrthogonalize(wayID, projection, vertexID) {
         }
 
         return graph;
+
+
+        function clonePoints(array) {
+            return array.map(function(p) {
+                return { id: p.id, coord: [p.coord[0], p.coord[1]] };
+            });
+        }
 
 
         function calcMotion(point, i, array) {
@@ -273,7 +270,7 @@ export function actionOrthogonalize(wayID, projection, vertexID) {
         graph = graph.replace(way);
 
         var isClosed = way.isClosed();
-        var nodes = _clone(graph.childNodes(way));
+        var nodes = graph.childNodes(way).slice();  // shallow copy
         if (isClosed) nodes.pop();
 
         if (vertexID !== undefined) {

@@ -10,12 +10,13 @@
         "incline"
     ],
     "moreFields": [
-        "wheelchair",
-        "lit",
-        "smoothness",
-        "maxspeed",
         "covered",
-        "dog"
+        "dog",
+        "lit",
+        "maxspeed",
+        "maxweight_bridge",
+        "smoothness",
+        "wheelchair"
     ],
     "geometry": [
         "line"
@@ -24,7 +25,9 @@
         "highway": "cycleway"
     },
     "terms": [
-        "bike"
+        "bike path",
+        "bicyle path"
     ],
+    "matchScore": 0.9,
     "name": "Cycle Path"
 }

@@ -180,27 +180,27 @@
 
 
 /* Mapillary Image Layer */
-.layer-mapillary-images {
+.layer-mapillary {
     pointer-events: none;
 }
-.layer-mapillary-images .viewfield-group * {
+.layer-mapillary .viewfield-group * {
     fill: #55ff22;
 }
-.layer-mapillary-images .sequence {
+.layer-mapillary .sequence {
     stroke: #55ff22;
 }
 
-.layer-mapillary-images .viewfield-group.viewfield-group--public-organization * {
+.layer-mapillary .viewfield-group.viewfield-group--public-organization * {
     fill: #5087FF;
 }
-.layer-mapillary-images .sequence.sequence--public-organization {
+.layer-mapillary .sequence.sequence--public-organization {
     stroke: #5087FF;
 }
 
-.layer-mapillary-images .viewfield-group.viewfield-group--private-organization * {
+.layer-mapillary .viewfield-group.viewfield-group--private-organization * {
     fill: #8F89F5;
 }
-.layer-mapillary-images .sequence.sequence--private-organization {
+.layer-mapillary .sequence.sequence--private-organization {
     stroke: #8F89F5;
 }
 
@@ -243,13 +243,13 @@
 
 
 /* OpenStreetCam Image Layer */
-.layer-openstreetcam-images {
+.layer-openstreetcam {
     pointer-events: none;
 }
-.layer-openstreetcam-images .viewfield-group * {
+.layer-openstreetcam .viewfield-group * {
     fill: #20c4ff;
 }
-.layer-openstreetcam-images .sequence {
+.layer-openstreetcam .sequence {
     stroke: #20c4ff;
 }
 

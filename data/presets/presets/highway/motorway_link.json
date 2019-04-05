@@ -14,10 +14,12 @@
     "moreFields": [
         "covered",
         "destination/symbol_oneway",
+        "incline",
         "junction_line",
         "lit",
         "maxheight",
         "maxspeed/advisory",
+        "maxweight_bridge",
         "name",
         "ref_road_number",
         "smoothness",

@@ -3,19 +3,36 @@
     "fields": [
         "name",
         "surface",
-        "lit",
+        "floating",
         "width",
-        "access"
+        "access",
+        "lit"
+    ],
+    "moreFields": [
+        "incline",
+        "{highway/footway}"
     ],
     "geometry": [
         "line",
         "area"
     ],
     "terms": [
+        "berth",
         "dock",
-        "jetty"
+        "jetty",
+        "landing",
+        "promenade",
+        "wharf"
     ],
     "tags": {
+        "man_made": "pier"
+    },
+    "addTags": {
+        "highway": "footway",
+        "man_made": "pier"
+    },
+    "removeTags": {
+        "highway": "footway",
         "man_made": "pier"
     },
     "name": "Pier"

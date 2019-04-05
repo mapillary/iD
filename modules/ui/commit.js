@@ -1,10 +1,6 @@
-import _clone from 'lodash-es/clone';
-import _forEach from 'lodash-es/forEach';
-import _isEqual from 'lodash-es/isEqual';
-import _unionBy from 'lodash-es/unionBy';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { select as d3_select } from 'd3-selection';
+import deepEqual from 'fast-deep-equal';
 
 import { t } from '../util/locale';
 import { osmChangeset } from '../osm';
@@ -27,7 +23,8 @@ var readOnlyTags = [
     /^ideditor:/,
     /^imagery_used$/,
     /^host$/,
-    /^locale$/
+    /^locale$/,
+    /^warnings:/
 ];
 
 // treat most punctuation (except -, _, +, &) as hashtag delimiters - #4398
@@ -93,7 +90,7 @@ export function uiCommit(context) {
             _changeset = new osmChangeset({ tags: tags });
         }
 
-        tags = _clone(_changeset.tags);
+        tags = Object.assign({}, _changeset.tags);   // shallow copy
 
         // assign tags for imagery used
         var imageryUsed = context.history().imageryUsed().join(';').substr(0, 255);
@@ -115,6 +112,18 @@ export function uiCommit(context) {
             if (iOsmClosed.length) {
                 tags['closed:improveosm'] = iOsmClosed.join(';').substr(0, 255);
             }
+        }
+
+        var warningCountsByType = {};
+        context.validator().getWarnings().forEach(function(warning) {
+            // deletion count can be derived so don't tag that warning in the changeset
+            if (warning.type === 'many_deletions') return;
+            if (!warningCountsByType[warning.type]) warningCountsByType[warning.type] = 0;
+            warningCountsByType[warning.type] += 1;
+        });
+        for (var warningType in warningCountsByType) {
+            // tag the counts of warnings ignored by the user
+            tags['warnings:' + warningType] = warningCountsByType[warningType].toString();
         }
 
         _changeset = _changeset.update({ tags: tags });
@@ -316,7 +325,7 @@ export function uiCommit(context) {
             .call(rawTagEditor
                 .expanded(expanded)
                 .readOnlyTags(readOnlyTags)
-                .tags(_clone(_changeset.tags))
+                .tags(Object.assign({}, _changeset.tags))   // shallow copy
             );
 
 
@@ -333,7 +342,7 @@ export function uiCommit(context) {
                 .call(rawTagEditor
                     .expanded(expanded)
                     .readOnlyTags(readOnlyTags)
-                    .tags(_clone(_changeset.tags))
+                    .tags(Object.assign({}, _changeset.tags))   // shallow copy
                 );
         }
     }
@@ -388,29 +397,45 @@ export function uiCommit(context) {
 
         if (inComment !== null) {                    // when hashtags are detected in comment...
             context.storage('hashtags', null);       // always remove stored hashtags - #4304
-            if (commentOnly) { inHashTags = null; }  // optionally override hashtags field
+            if (commentOnly) { inHashTags = []; }    // optionally override hashtags field
         }
-        return _unionBy(inComment, inHashTags, function (s) {
-            return s.toLowerCase();
-        });
+
+        // keep only one copy of the tags
+        var all = new Set();
+        var keepTags = [];
+        inComment.forEach(checkTag);
+        inHashTags.forEach(checkTag);
+        return keepTags;
+
+        // Compare tags as lowercase strings, but keep original case tags
+        function checkTag(s) {
+            var compare = s.toLowerCase();
+            if (!all.has(compare)) {
+                all.add(compare);
+                keepTags.push(s);
+            }
+        }
 
         // Extract hashtags from `comment`
         function commentTags() {
-            return tags.comment
+            var matches = (tags.comment || '')
                 .replace(/http\S*/g, '')  // drop anything that looks like a URL - #4289
                 .match(hashtagRegex);
+
+            return (matches || []);
         }
 
         // Extract and clean hashtags from `hashtags`
         function hashTags() {
-            var t = tags.hashtags || '';
-            return t
+            var matches = (tags.hashtags || '')
                 .split(/[,;\s]+/)
                 .map(function (s) {
                     if (s[0] !== '#') { s = '#' + s; }    // prepend '#'
                     var matched = s.match(hashtagRegex);
                     return matched && matched[0];
-                }).filter(Boolean);                       // exclude falsey
+                }).filter(Boolean);                       // exclude falsy
+
+            return (matches || []);
         }
     }
 
@@ -424,9 +449,10 @@ export function uiCommit(context) {
 
 
     function updateChangeset(changed, onInput) {
-        var tags = _clone(_changeset.tags);
+        var tags = Object.assign({}, _changeset.tags);   // shallow copy
 
-        _forEach(changed, function(v, k) {
+        Object.keys(changed).forEach(function(k) {
+            var v = changed[k];
             k = k.trim().substr(0, 255);
             if (readOnlyTags.indexOf(k) !== -1) return;
 
@@ -481,7 +507,7 @@ export function uiCommit(context) {
             delete tags.changesets_count;
         }
 
-        if (!_isEqual(_changeset.tags, tags)) {
+        if (!deepEqual(_changeset.tags, tags)) {
             _changeset = _changeset.update({ tags: tags });
         }
     }

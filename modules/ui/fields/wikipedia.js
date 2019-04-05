@@ -1,6 +1,3 @@
-import _clone from 'lodash-es/clone';
-import _find from 'lodash-es/find';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 
 import {
@@ -140,7 +137,7 @@ export function uiFieldWikipedia(field, context) {
         var value = utilGetSetValue(lang).toLowerCase();
         var locale = utilDetect().locale.toLowerCase();
         var localeLanguage;
-        return _find(dataWikipedia, function(d) {
+        return dataWikipedia.find(function(d) {
             if (d[2] === locale) localeLanguage = d;
             return d[0].toLowerCase() === value ||
                 d[1].toLowerCase() === value ||
@@ -163,7 +160,7 @@ export function uiFieldWikipedia(field, context) {
     function change(skipWikidata) {
         var value = utilGetSetValue(title);
         var m = value.match(/https?:\/\/([-a-z]+)\.wikipedia\.org\/(?:wiki|\1-[-a-z]+)\/([^#]+)(?:#(.+))?/);
-        var l = m && _find(dataWikipedia, function(d) { return m[1] === d[2]; });
+        var l = m && dataWikipedia.find(function(d) { return m[1] === d[2]; });
         var syncTags = {};
 
         if (l) {
@@ -209,8 +206,8 @@ export function uiFieldWikipedia(field, context) {
             if (!data || !Object.keys(data).length) return;
 
             var qids = Object.keys(data);
-            var value = qids && _find(qids, function(id) { return id.match(/^Q\d+$/); });
-            var currTags = _clone(context.entity(initEntityID).tags);
+            var value = qids && qids.find(function(id) { return id.match(/^Q\d+$/); });
+            var currTags = Object.assign({}, context.entity(initEntityID).tags);  // shallow copy
 
             currTags.wikidata = value;
 
@@ -229,7 +226,7 @@ export function uiFieldWikipedia(field, context) {
     wiki.tags = function(tags) {
         var value = tags[field.key] || '';
         var m = value.match(/([^:]+):([^#]+)(?:#(.+))?/);
-        var l = m && _find(dataWikipedia, function(d) { return m[1] === d[2]; });
+        var l = m && dataWikipedia.find(function(d) { return m[1] === d[2]; });
         var anchor = m && m[3];
 
         // value in correct format

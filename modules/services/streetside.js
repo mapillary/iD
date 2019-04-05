@@ -1,8 +1,3 @@
-import _extend from 'lodash-es/extend';
-import _find from 'lodash-es/find';
-import _forEach from 'lodash-es/forEach';
-import _union from 'lodash-es/union';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { timer as d3_timer } from 'd3-timer';
 
@@ -27,7 +22,7 @@ import {
 } from '../geo';
 
 import { utilDetect } from '../util/detect';
-import { utilQsString, utilRebind, utilTiler } from '../util';
+import { utilArrayUnion, utilQsString, utilRebind, utilTiler } from '../util';
 
 import Q from 'q';
 
@@ -83,11 +78,10 @@ function loadTiles(which, url, projection, margin) {
 
     // abort inflight requests that are no longer needed
     var cache = _ssCache[which];
-    _forEach(cache.inflight, function(v, k) {
-        var wanted = _find(tiles, function(tile) { return k.indexOf(tile.id + ',') === 0; });
-
+    Object.keys(cache.inflight).forEach(function(k) {
+        var wanted = tiles.find(function(tile) { return k.indexOf(tile.id + ',') === 0; });
         if (!wanted) {
-            abortRequest(v);
+            abortRequest(cache.inflight[k]);
             delete cache.inflight[k];
         }
     });
@@ -450,12 +444,8 @@ export default {
      * reset() reset the cache.
      */
     reset: function () {
-        var cache = _ssCache;
-
-        if (cache) {
-            if (cache.bubbles && cache.bubbles.inflight) {
-                _forEach(cache.bubbles.inflight, abortRequest);
-            }
+        if (_ssCache) {
+            Object.values(_ssCache.bubbles.inflight).forEach(abortRequest);
         }
 
         _ssCache = {
@@ -808,7 +798,7 @@ export default {
                 that.selectImage(d)
                     .then(function(r) {
                         if (r.status === 'ok') {
-                            _sceneOptions = _extend(_sceneOptions, viewstate);
+                            _sceneOptions = Object.assign(_sceneOptions, viewstate);
                             that.showViewer();
                         }
                     });
@@ -953,7 +943,7 @@ export default {
         var selectedBubbleKeys = (selectedSequence && selectedSequence.bubbles.map(function (d) { return d.key; })) || [];
 
         // highlight sibling viewfields on either the selected or the hovered sequences
-        var highlightedBubbleKeys = _union(hoveredBubbleKeys, selectedBubbleKeys);
+        var highlightedBubbleKeys = utilArrayUnion(hoveredBubbleKeys, selectedBubbleKeys);
 
         d3_selectAll('.layer-streetside-images .viewfield-group')
             .classed('highlighted', function (d) { return highlightedBubbleKeys.indexOf(d.key) !== -1; })

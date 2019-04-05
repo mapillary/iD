@@ -1,3 +1,12 @@
+export { utilArrayChunk } from './array';
+export { utilArrayDifference } from './array';
+export { utilArrayFlatten } from './array';
+export { utilArrayGroupBy } from './array';
+export { utilArrayIntersection } from './array';
+export { utilArrayUnion } from './array';
+export { utilArrayUniq } from './array';
+export { utilArrayUniqBy } from './array';
+
 export { utilAsyncMap } from './util';
 export { utilCallWhenIdle } from './call_when_idle';
 export { utilCleanTags } from './clean_tags';
@@ -13,13 +22,13 @@ export { utilEntityOrDeepMemberSelector } from './util';
 export { utilFastMouse } from './util';
 export { utilFunctor } from './util';
 export { utilGetAllNodes } from './util';
-export { utilGetPrototypeOf } from './util';
 export { utilGetSetValue } from './get_set_value';
 export { utilHashcode } from './util';
 export { utilHighlightEntities } from './util';
 export { utilIdleWorker } from './idle_worker';
 export { utilKeybinding } from './keybinding';
 export { utilNoAuto } from './util';
+export { utilObjectOmit } from './object';
 export { utilPrefixCSSProperty } from './util';
 export { utilPrefixDOMProperty } from './util';
 export { utilPreset } from './util';

@@ -1,9 +1,3 @@
-import _intersection from 'lodash-es/intersection';
-import _map from 'lodash-es/map';
-import _uniq from 'lodash-es/uniq';
-import _values from 'lodash-es/values';
-import _without from 'lodash-es/without';
-
 import {
     event as d3_event,
     select as d3_select
@@ -30,7 +24,11 @@ import { osmNode, osmWay } from '../osm';
 import * as Operations from '../operations/index';
 import { uiEditMenu, uiSelectionList } from '../ui';
 import { uiCmd } from '../ui/cmd';
-import { utilEntityOrMemberSelector, utilEntitySelector, utilKeybinding } from '../util';
+
+import {
+    utilArrayIntersection, utilEntityOrMemberSelector,
+    utilEntitySelector, utilKeybinding
+} from '../util';
 
 // deprecation warning - Radial Menu to be removed in iD v3
 import { uiRadialMenu } from '../ui';
@@ -103,13 +101,13 @@ export function modeSelect(context, selectedIDs) {
                 return [];  // selection includes some not vertexes
             }
 
-            var currParents = _map(graph.parentWays(entity), 'id');
+            var currParents = graph.parentWays(entity).map(function(w) { return w.id; });
             if (!commonParents.length) {
                 commonParents = currParents;
                 continue;
             }
 
-            commonParents = _intersection(commonParents, currParents);
+            commonParents = utilArrayIntersection(commonParents, currParents);
             if (!commonParents.length) {
                 return [];
             }
@@ -215,23 +213,23 @@ export function modeSelect(context, selectedIDs) {
     };
 
 
-    mode.newFeature = function(_) {
+    mode.newFeature = function(val) {
         if (!arguments.length) return newFeature;
-        newFeature = _;
+        newFeature = val;
         return mode;
     };
 
 
-    mode.suppressMenu = function(_) {
+    mode.suppressMenu = function(val) {
         if (!arguments.length) return suppressMenu;
-        suppressMenu = _;
+        suppressMenu = val;
         return mode;
     };
 
 
-    mode.follow = function(_) {
+    mode.follow = function(val) {
         if (!arguments.length) return follow;
-        follow = _;
+        follow = val;
         return mode;
     };
 
@@ -241,17 +239,21 @@ export function modeSelect(context, selectedIDs) {
 
         context.features().forceVisible(selectedIDs);
 
-        var operations = _without(_values(Operations), Operations.operationDelete)
+        var operations = Object.values(Operations)
             .map(function(o) { return o(selectedIDs, context); })
-            .filter(function(o) { return o.available(); });
+            .filter(function(o) { return o.available() && o.id !== 'delete' && o.id !== 'downgrade'; });
+
+        var downgradeOperation = Operations.operationDowngrade(selectedIDs, context);
+        // don't allow delete if downgrade is available
+        var lastOperation = !context.inIntro() && downgradeOperation.available() ? downgradeOperation : Operations.operationDelete(selectedIDs, context);
 
         // deprecation warning - Radial Menu to be removed in iD v3
         var isRadialMenu = context.storage('edit-menu-style') === 'radial';
         if (isRadialMenu) {
             operations = operations.slice(0,7);
-            operations.unshift(Operations.operationDelete(selectedIDs, context));
+            operations.unshift(lastOperation);
         } else {
-            operations.push(Operations.operationDelete(selectedIDs, context));
+            operations.push(lastOperation);
         }
 
         operations.forEach(function(operation) {
@@ -344,7 +346,7 @@ export function modeSelect(context, selectedIDs) {
                 var next = entity.nodes[choice.index];
 
                 context.perform(
-                    actionAddMidpoint({loc: choice.loc, edge: [prev, next]}, osmNode()),
+                    actionAddMidpoint({ loc: choice.loc, edge: [prev, next] }, osmNode()),
                     t('operations.add.annotation.vertex')
                 );
 
@@ -353,7 +355,7 @@ export function modeSelect(context, selectedIDs) {
 
             } else if (entity.type === 'midpoint') {
                 context.perform(
-                    actionAddMidpoint({loc: entity.loc, edge: entity.edge}, osmNode()),
+                    actionAddMidpoint({ loc: entity.loc, edge: entity.edge }, osmNode()),
                     t('operations.add.annotation.vertex'));
 
                 d3_event.preventDefault();
@@ -495,7 +497,7 @@ export function modeSelect(context, selectedIDs) {
 
         function nextParent() {
             d3_event.preventDefault();
-            var parents = _uniq(commonParents());
+            var parents = commonParents();
             if (!parents || parents.length < 2) return;
 
             var index = parents.indexOf(_relatedParent);

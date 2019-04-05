@@ -1,5 +1,5 @@
 import _throttle from 'lodash-es/throttle';
-import _isNumber from 'lodash-es/isNumber';
+
 import { select as d3_select } from 'd3-selection';
 import { svgPath, svgPointTransform } from './index';
 import { services } from '../services';
@@ -51,7 +51,6 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var service = getService();
         if (!service) return;
 
-        service.loadViewer(context);
         editOn();
 
         layer
@@ -112,7 +111,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
 
     function transform(d) {
         var t = svgPointTransform(projection)(d);
-        if (d.pano && _isNumber(viewerCompassAngle)) {
+        if (d.pano && viewerCompassAngle !== null && isFinite(viewerCompassAngle)) {
             t += ' rotate(' + Math.floor(viewerCompassAngle) + ',0,0)';
         } else if (d.ca) {
             t += ' rotate(' + Math.floor(d.ca) + ',0,0)';
@@ -131,6 +130,46 @@ export function svgMapillaryImages(projection, context, dispatch) {
             );
     }
 
+    context.photos().on('change.mapillary_images', update);
+
+    function filterImages(images) {
+        var showsPano = context.photos().showsPanoramic();
+        var showsFlat = context.photos().showsFlat();
+        if (!showsPano || !showsFlat) {
+            images = images.filter(function(image) {
+                if (image.pano) return showsPano;
+                return showsFlat;
+            });
+        }
+        return images;
+    }
+
+    function filterSequences(sequences, service) {
+        var showsPano = context.photos().showsPanoramic();
+        var showsFlat = context.photos().showsFlat();
+        if (!showsPano || !showsFlat) {
+            sequences = sequences.filter(function(sequence) {
+                if (sequence.properties.hasOwnProperty('pano')) {
+                    if (sequence.properties.pano) return showsPano;
+                    return showsFlat;
+                } else {
+                    // if the sequence doesn't specify pano or not, search its images
+                    var cProps = sequence.properties.coordinateProperties;
+                    if (cProps && cProps.image_keys && cProps.image_keys.length > 0) {
+                        for (var index in cProps.image_keys) {
+                            var imageKey = cProps.image_keys[index];
+                            var image = service.cachedImage(imageKey);
+                            if (image && image.hasOwnProperty('pano')) {
+                                if (image.pano) return showsPano;
+                                return showsFlat;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        return sequences;
+    }
 
     function update() {
         var viewer = d3_select('#photoviewer');
@@ -144,6 +183,9 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var sequences = (service ? service.sequences(projection) : []);
         var images = (service && showMarkers ? service.images(projection) : []);
         var filters = service.filters();
+
+        images = filterImages(images);
+        sequences = filterSequences(sequences, service);
 
         var traces = layer.selectAll('.sequences').selectAll('.sequence')
             .data(sequences, function(d) { return d.properties.key; });
@@ -249,7 +291,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
         var enabled = svgMapillaryImages.enabled;
         var service = getService();
 
-        layer = selection.selectAll('.layer-mapillary-images')
+        layer = selection.selectAll('.layer-mapillary')
             .data(service ? [0] : []);
 
         layer.exit()
@@ -257,7 +299,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
 
         var layerEnter = layer.enter()
             .append('g')
-            .attr('class', 'layer-mapillary-images')
+            .attr('class', 'layer-mapillary')
             .style('display', enabled ? 'block' : 'none');
 
         layerEnter

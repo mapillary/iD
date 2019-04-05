@@ -1,12 +1,11 @@
-import _uniq from 'lodash-es/uniq';
-
 import { json as d3_json } from 'd3-request';
 
-import { utilQsString } from '../util';
+import { utilArrayUniq, utilQsString } from '../util';
 import { currentLocale } from '../util/locale';
 
 var apibase = 'https://www.wikidata.org/w/api.php?';
 var _wikidataCache = {};
+
 
 export default {
 
@@ -14,6 +13,35 @@ export default {
 
     reset: function() {
         _wikidataCache = {};
+    },
+
+
+    // Search for Wikidata items matching the query
+    itemsForSearchQuery: function(query, callback) {
+        if (!query) {
+            callback('No query', {});
+            return;
+        }
+
+        d3_json(apibase + utilQsString({
+            action: 'wbsearchentities',
+            format: 'json',
+            formatversion: 2,
+            search: query,
+            type: 'item',
+            language: this.languagesToQuery()[0],
+            limit: 10,
+            origin: '*'
+        }), function(err, data) {
+            if (data && data.error) {
+                err = data.error;
+            }
+            if (err) {
+                callback(err, {});
+            } else {
+                callback(null, data.search || {});
+            }
+        });
     },
 
 
@@ -47,6 +75,13 @@ export default {
         });
     },
 
+    languagesToQuery: function() {
+        return utilArrayUniq([
+            currentLocale.toLowerCase(),
+            currentLocale.split('-', 2)[0].toLowerCase(),
+            'en'
+        ]);
+    },
 
     entityByQID: function(qid, callback) {
         if (!qid) {
@@ -58,11 +93,7 @@ export default {
             return;
         }
 
-        var langs = _uniq([
-            currentLocale.toLowerCase(),
-            currentLocale.split('-', 2)[0].toLowerCase(),
-            'en'
-        ]);
+        var langs = this.languagesToQuery();
 
         d3_json(apibase + utilQsString({
             action: 'wbgetentities',
@@ -103,6 +134,9 @@ export default {
     // }
     //
     getDocs: function(params, callback) {
+
+        var langs = this.languagesToQuery();
+
         this.entityByQID(params.qid, function(err, entity) {
             if (err || !entity) {
                 callback(err || 'No entity');
@@ -144,14 +178,9 @@ export default {
             }
 
             if (entity.sitelinks) {
-                // must be one of these that we requested..
-                var langs = _uniq([
-                    currentLocale.toLowerCase(),
-                    currentLocale.split('-', 2)[0].toLowerCase(),
-                    'en'
-                ]);
                 var englishLocale = (currentLocale.split('-', 2)[0].toLowerCase() === 'en');
 
+                // must be one of these that we requested..
                 for (i = 0; i < langs.length; i++) {   // check each, in order of preference
                     var w = langs[i] + 'wiki';
                     if (entity.sitelinks[w]) {

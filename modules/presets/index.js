@@ -1,9 +1,3 @@
-import _bind from 'lodash-es/bind';
-import _forEach from 'lodash-es/forEach';
-import _isEmpty from 'lodash-es/isEmpty';
-import _reject from 'lodash-es/reject';
-import _uniq from 'lodash-es/uniq';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { json as d3_json } from 'd3-request';
 
@@ -12,7 +6,7 @@ import { presetCategory } from './category';
 import { presetCollection } from './collection';
 import { presetField } from './field';
 import { presetPreset } from './preset';
-import { utilRebind } from '../util';
+import { utilArrayUniq, utilRebind } from '../util';
 
 export { presetCategory };
 export { presetCollection };
@@ -84,12 +78,13 @@ export function presetIndex(context) {
         if (address && (!match || match.isFallback())) {
             match = address;
         }
-        return match || all.item(geometry);
+        return match || all.fallback(geometry);
     };
 
     all.allowsVertex = function(entity, resolver) {
         if (entity.type !== 'node') return false;
-        if (_isEmpty(entity.tags)) return true;
+        if (Object.keys(entity.tags).length === 0) return true;
+
         return resolver.transient(entity, 'vertexMatch', function() {
             var vertexPresets = _index.vertex;
             if (entity.isOnAddressLine(resolver)) {
@@ -127,7 +122,11 @@ export function presetIndex(context) {
     all.areaKeys = function() {
         var areaKeys = {};
         var ignore = ['barrier', 'highway', 'footway', 'railway', 'type'];  // probably a line..
-        var presets = _reject(all.collection, 'suggestion');
+
+        // ignore name-suggestion-index and deprecated presets
+        var presets = all.collection.filter(function(p) {
+            return !p.suggestion && !p.replacement;
+        });
 
         // whitelist
         presets.forEach(function(d) {
@@ -159,9 +158,10 @@ export function presetIndex(context) {
 
     all.build = function(d, visible) {
         if (d.fields) {
-            _forEach(d.fields, function(d, id) {
-                _fields[id] = presetField(id, d);
-                if (d.universal) {
+            Object.keys(d.fields).forEach(function(id) {
+                var f = d.fields[id];
+                _fields[id] = presetField(id, f);
+                if (f.universal) {
                     _universal.push(_fields[id]);
                 }
             });
@@ -169,29 +169,31 @@ export function presetIndex(context) {
 
         if (d.presets) {
             var rawPresets = d.presets;
-            _forEach(d.presets, function(d, id) {
+            Object.keys(d.presets).forEach(function(id) {
+                var p = d.presets[id];
                 var existing = all.index(id);
                 if (existing !== -1) {
-                    all.collection[existing] = presetPreset(id, d, _fields, visible, rawPresets);
+                    all.collection[existing] = presetPreset(id, p, _fields, visible, rawPresets);
                 } else {
-                    all.collection.push(presetPreset(id, d, _fields, visible, rawPresets));
+                    all.collection.push(presetPreset(id, p, _fields, visible, rawPresets));
                 }
             });
         }
 
         if (d.categories) {
-            _forEach(d.categories, function(d, id) {
+            Object.keys(d.categories).forEach(function(id) {
+                var c = d.categories[id];
                 var existing = all.index(id);
                 if (existing !== -1) {
-                    all.collection[existing] = presetCategory(id, d, all);
+                    all.collection[existing] = presetCategory(id, c, all);
                 } else {
-                    all.collection.push(presetCategory(id, d, all));
+                    all.collection.push(presetCategory(id, c, all));
                 }
             });
         }
 
         if (d.defaults) {
-            var getItem = _bind(all.item, all);
+            var getItem = (all.item).bind(all);
             _defaults = {
                 area: presetCollection(d.defaults.area.map(getItem)),
                 line: presetCollection(d.defaults.line.map(getItem)),
@@ -269,13 +271,16 @@ export function presetIndex(context) {
     };
 
     all.defaults = function(geometry, n) {
-        var rec = all.recent().matchGeometry(geometry).collection.slice(0, 4);
-        var def = _uniq(rec.concat(_defaults[geometry].collection)).slice(0, n - 1);
-        return presetCollection(_uniq(rec.concat(def).concat(all.item(geometry))));
+        var rec = [];
+        if (!context.inIntro()) {
+            rec = all.recent().matchGeometry(geometry).collection.slice(0, 4);
+        }
+        var def = utilArrayUniq(rec.concat(_defaults[geometry].collection)).slice(0, n - 1);
+        return presetCollection(utilArrayUniq(rec.concat(def).concat(all.fallback(geometry))));
     };
 
     all.recent = function() {
-        return presetCollection(_uniq(all.getRecents().map(function(d) {
+        return presetCollection(utilArrayUniq(all.getRecents().map(function(d) {
             return d.preset;
         })));
     };
@@ -307,10 +312,16 @@ export function presetIndex(context) {
     function ribbonItemForMinified(d, source) {
         if (d && d.pID && d.geom) {
             var preset = all.item(d.pID);
+            if (!preset) return null;
+
+            var geom = d.geom;
+            // treat point and vertex features as one geometry
+            if (geom === 'vertex') geom = 'point';
+
             // iD's presets could have changed since this was saved,
             // so make sure it's still valid.
-            if (preset && preset.matchGeometry(d.geom)) {
-                return RibbonItem(preset, d.geom, source);
+            if (preset.matchGeometry(geom) || (geom === 'point' && preset.matchGeometry('vertex'))) {
+                return RibbonItem(preset, geom, source);
             }
         }
         return null;
@@ -364,6 +375,7 @@ export function presetIndex(context) {
     };
 
     all.toggleFavorite = function(preset, geometry) {
+        geometry = all.fallback(geometry).id;
         var favs = all.getFavorites();
         var favorite = all.favoriteMatching(preset, geometry);
         if (favorite) {
@@ -381,6 +393,7 @@ export function presetIndex(context) {
     };
 
     all.removeFavorite = function(preset, geometry) {
+        geometry = all.fallback(geometry).id;
         var item = all.favoriteMatching(preset, geometry);
         if (item) {
             var items = all.getFavorites();
@@ -399,6 +412,7 @@ export function presetIndex(context) {
     };
 
     all.favoriteMatching = function(preset, geometry) {
+        geometry = all.fallback(geometry).id;
         var favs = all.getFavorites();
         for (var index in favs) {
             if (favs[index].matches(preset, geometry)) {
@@ -408,6 +422,7 @@ export function presetIndex(context) {
         return null;
     };
     all.recentMatching = function(preset, geometry) {
+        geometry = all.fallback(geometry).id;
         var items = all.getRecents();
         for (var index in items) {
             if (items[index].matches(preset, geometry)) {
@@ -439,7 +454,10 @@ export function presetIndex(context) {
     };
 
     all.setMostRecent = function(preset, geometry) {
+        if (context.inIntro()) return;
         if (preset.searchable === false) return;
+
+        geometry = all.fallback(geometry).id;
 
         var items = all.getRecents();
         var item = all.recentMatching(preset, geometry);

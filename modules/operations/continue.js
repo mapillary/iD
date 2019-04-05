@@ -1,17 +1,17 @@
-import _extend from 'lodash-es/extend';
-import _groupBy from 'lodash-es/groupBy';
-
 import { t } from '../util/locale';
 import { modeDrawLine } from '../modes';
 import { behaviorOperation } from '../behavior';
+import { utilArrayGroupBy } from '../util';
 
 
 export function operationContinue(selectedIDs, context) {
-    var graph = context.graph(),
-        entities = selectedIDs.map(function(id) { return graph.entity(id); }),
-        geometries = _extend({ line: [], vertex: [] },
-            _groupBy(entities, function(entity) { return entity.geometry(graph); })),
-        vertex = geometries.vertex[0];
+    var graph = context.graph();
+    var entities = selectedIDs.map(function(id) { return graph.entity(id); });
+    var geometries = Object.assign(
+        { line: [], vertex: [] },
+        utilArrayGroupBy(entities, function(entity) { return entity.geometry(graph); })
+    );
+    var vertex = geometries.vertex[0];
 
 
     function candidateWays() {

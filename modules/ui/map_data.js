@@ -30,6 +30,7 @@ export function uiMapData(context) {
     var _fillSelected = context.storage('area-fill') || 'partial';
     var _shown = false;
     var _dataLayerContainer = d3_select(null);
+    var _photoOverlayContainer = d3_select(null);
     var _fillList = d3_select(null);
     var _featureList = d3_select(null);
     var _QAList = d3_select(null);
@@ -116,7 +117,7 @@ export function uiMapData(context) {
 
 
     function drawPhotoItems(selection) {
-        var photoKeys = ['streetside', 'mapillary-images', 'mapillary-signs', 'mapillary-points', 'openstreetcam-images'];
+        var photoKeys = context.photos().overlayLayerIDs();
         var photoLayers = layers.all().filter(function(obj) { return photoKeys.indexOf(obj.id) !== -1; });
         var data = photoLayers.filter(function(obj) { return obj.layer.supported(); });
 
@@ -144,14 +145,25 @@ export function uiMapData(context) {
 
         var liEnter = li.enter()
             .append('li')
-            .attr('class', function(d) { return 'list-item-photos list-item-' + d.id; });
+            .attr('class', function(d) {
+                var classes = 'list-item-photos list-item-' + d.id;
+                if (d.id === 'mapillary-signs' || d.id === 'mapillary-points') {
+                    classes += ' indented';
+                }
+                return classes;
+            });
 
         var labelEnter = liEnter
             .append('label')
             .each(function(d) {
+                var titleID;
+                if (d.id === 'mapillary-signs') titleID = 'mapillary.signs.tooltip';
+                else if (d.id === 'mapillary') titleID = 'mapillary_images.tooltip';
+                else if (d.id === 'openstreetcam') titleID = 'openstreetcam_images.tooltip';
+                else titleID = d.id.replace('-', '_') + '.tooltip';
                 d3_select(this)
                     .call(tooltip()
-                        .title(t(d.id.replace('-', '_') + '.tooltip'))
+                        .title(t(titleID))
                         .placement('top')
                     );
             });
@@ -163,7 +175,11 @@ export function uiMapData(context) {
 
         labelEnter
             .append('span')
-            .text(function(d) { return t(d.id.replace('-', '_') + '.title'); });
+            .text(function(d) {
+                var id = d.id;
+                if (id === 'mapillary-signs') id = 'photo_overlays.traffic_signs';
+                return t(id.replace('-', '_') + '.title');
+            });
 
 
         // Update
@@ -172,6 +188,70 @@ export function uiMapData(context) {
             .classed('active', layerEnabled)
             .selectAll('input')
             .property('checked', layerEnabled);
+    }
+
+    function drawPhotoTypeItems(selection) {
+        var data = context.photos().allPhotoTypes();
+
+        function typeEnabled(d) {
+            return context.photos().showsPhotoType(d);
+        }
+
+        var ul = selection
+            .selectAll('.layer-list-photo-types')
+            .data(context.photos().shouldFilterByPhotoType() ? [0] : []);
+
+        ul.exit()
+            .remove();
+
+        ul = ul.enter()
+            .append('ul')
+            .attr('class', 'layer-list layer-list-photo-types')
+            .merge(ul);
+
+        var li = ul.selectAll('.list-item-photo-types')
+            .data(data);
+
+        li.exit()
+            .remove();
+
+        var liEnter = li.enter()
+            .append('li')
+            .attr('class', function(d) {
+                return 'list-item-photo-types list-item-' + d;
+            });
+
+        var labelEnter = liEnter
+            .append('label')
+            .each(function(d) {
+                d3_select(this)
+                    .call(tooltip()
+                        .title(t('photo_overlays.photo_type.' + d + '.tooltip'))
+                        .placement('top')
+                    );
+            });
+
+        labelEnter
+            .append('input')
+            .attr('type', 'checkbox')
+            .on('change', function(d) {
+                context.photos().togglePhotoType(d);
+                update();
+            });
+
+        labelEnter
+            .append('span')
+            .text(function(d) {
+                return t('photo_overlays.photo_type.' + d + '.title');
+            });
+
+
+        // Update
+        li
+            .merge(liEnter)
+            .classed('active', typeEnabled)
+            .selectAll('input')
+            .property('checked', typeEnabled);
     }
 
 
@@ -548,6 +628,18 @@ export function uiMapData(context) {
         updateDataLayers();
     }
 
+    function renderPhotoOverlays(selection) {
+        var container = selection.selectAll('.photo-overlay-container')
+            .data([0]);
+
+        _photoOverlayContainer = container.enter()
+            .append('div')
+            .attr('class', 'photo-overlay-container')
+            .merge(container);
+
+        updatePhotoOverlays();
+    }
+
 
     function renderFillList(selection) {
         var container = selection.selectAll('.layer-fill-list')
@@ -574,11 +666,16 @@ export function uiMapData(context) {
         updateFeatureList();
     }
 
+    function updatePhotoOverlays() {
+        _photoOverlayContainer
+            .call(drawPhotoItems)
+            .call(drawPhotoTypeItems);
+    }
+
     function updateDataLayers() {
         _dataLayerContainer
             .call(drawOsmItems)
             .call(drawQAItems)
-            .call(drawPhotoItems)
             .call(drawCustomDataItems)
             .call(drawVectorItems);      // Beta - Detroit mapping challenge
     }
@@ -597,6 +694,9 @@ export function uiMapData(context) {
 
         if (!_pane.select('.disclosure-wrap-data_layers').classed('hide')) {
             updateDataLayers();
+        }
+        if (!_pane.select('.disclosure-wrap-photo_overlays').classed('hide')) {
+            updatePhotoOverlays();
         }
         if (!_pane.select('.disclosure-wrap-fill_area').classed('hide')) {
             updateFillList();
@@ -716,6 +816,15 @@ export function uiMapData(context) {
             .call(uiDisclosure(context, 'data_layers', true)
                 .title(t('map_data.data_layers'))
                 .content(renderDataLayers)
+            );
+
+        // photo overlays
+        content
+            .append('div')
+            .attr('class', 'map-data-photo-overlays')
+            .call(uiDisclosure(context, 'photo_overlays', false)
+                .title(t('photo_overlays.title'))
+                .content(renderPhotoOverlays)
             );
 
         // area fills

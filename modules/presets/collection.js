@@ -1,11 +1,4 @@
-import _find from 'lodash-es/find';
-import _findIndex from 'lodash-es/findIndex';
-import _some from 'lodash-es/some';
-import _uniq from 'lodash-es/uniq';
-import _values from 'lodash-es/values';
-import _without from 'lodash-es/without';
-
-import { utilEditDistance } from '../util/index';
+import { utilArrayUniq, utilEditDistance } from '../util';
 
 
 export function presetCollection(collection) {
@@ -17,13 +10,13 @@ export function presetCollection(collection) {
 
 
         item: function(id) {
-            return _find(this.collection, function(d) {
+            return this.collection.find(function(d) {
                 return d.id === id;
             });
         },
 
         index: function(id) {
-            return _findIndex(this.collection, function(d) {
+            return this.collection.findIndex(function(d) {
                 return d.id === id;
             });
         },
@@ -42,8 +35,13 @@ export function presetCollection(collection) {
             }));
         },
 
+        fallback: function(geometry) {
+            var id = geometry;
+            if (id === 'vertex') id = 'point';
+            return this.item(id);
+        },
 
-        search: function(value, geometry) {
+        search: function(value, geometry, countryCode) {
             if (!value) return this;
 
             value = value.toLowerCase();
@@ -80,11 +78,17 @@ export function presetCollection(collection) {
                 return aCompare.length - bCompare.length;
             }
 
-
-            var searchable = this.collection.filter(function(a) {
+            var pool = this.collection;
+            if (countryCode) {
+                pool = pool.filter(function(a) {
+                    if (!a.countryCodes) return true;
+                    return a.countryCodes.indexOf(countryCode) !== -1;
+                });
+            }
+            var searchable = pool.filter(function(a) {
                 return a.searchable !== false && a.suggestion !== true;
             });
-            var suggestions = this.collection.filter(function(a) {
+            var suggestions = pool.filter(function(a) {
                 return a.suggestion === true;
             });
 
@@ -97,13 +101,15 @@ export function presetCollection(collection) {
             // matches value to preset.terms values
             var leading_terms = searchable
                 .filter(function(a) {
-                    return _some(a.terms() || [], leading);
+                    return (a.terms() || []).some(leading);
                 });
 
             // matches value to preset.tags values
             var leading_tag_values = searchable
                 .filter(function(a) {
-                    return _some(_without(_values(a.tags || {}), '*'), leading);
+                    return Object.values(a.tags || {})
+                        .filter(function(val) { return val !== '*'; })
+                        .some(leading);
                 });
 
             var leading_suggestions = suggestions
@@ -126,7 +132,7 @@ export function presetCollection(collection) {
             // finds close matches to value in preset.terms
             var similar_terms = searchable
                 .filter(function(a) {
-                    return _some(a.terms() || [], function(b) {
+                    return (a.terms() || []).some(function(b) {
                         return utilEditDistance(value, b) + Math.min(value.length - b.length, 0) < 3;
                     });
                 });
@@ -153,15 +159,15 @@ export function presetCollection(collection) {
 
             if (geometry) {
                 if (typeof geometry === 'string') {
-                    results.push(presets.item(geometry));
+                    results.push(presets.fallback(geometry));
                 } else {
                     geometry.forEach(function(geom) {
-                        results.push(presets.item(geom));
+                        results.push(presets.fallback(geom));
                     });
                 }
             }
 
-            return presetCollection(_uniq(results));
+            return presetCollection(utilArrayUniq(results));
         }
     };
 

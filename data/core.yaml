@@ -8,27 +8,37 @@ en:
     copy: copy
     open_wikidata: open on wikidata.org
     favorite: favorite
+  toolbar:
+    inspect: Inspect
+    undo_redo: Undo / Redo
+    recent: Recent
+    favorites: Favorites
+    add_feature: Add Feature
   modes:
     add_feature:
       title: Add a feature
       description: "Search for features to add to the map."
       key: Tab
+      result: "{count} result"
+      results: "{count} results"
     add_area:
       title: Area
       description: "Add parks, buildings, lakes or other areas to the map."
       tail: "Click on the map to start drawing an area, like a park, lake, or building."
+      filter_tooltip: areas
     add_line:
       title: Line
       description: "Add highways, streets, pedestrian paths, canals or other lines to the map."
       tail: "Click on the map to start drawing a road, path, or route."
+      filter_tooltip: lines
     add_point:
       title: Point
       description: "Add restaurants, monuments, postal boxes or other points to the map."
       tail: Click on the map to add a point.
-    add_vertex:
-      title: Vertex
+      filter_tooltip: points
     add_note:
       title: Note
+      label: Add Note
       description: "Spotted an issue? Let other mappers know."
       tail: Click on the map to add a note.
       key: N
@@ -42,8 +52,6 @@ en:
         title: "Add {feature} as an area"
       building:
         title: "Add {feature} as a building"
-      vertex:
-        title: "Add {feature} as a vertex"
     browse:
       title: Browse
       description: Pan and zoom the map.
@@ -138,10 +146,32 @@ en:
       connected_to_hidden:
         single: This feature can't be deleted because it is connected to a hidden feature.
         multiple: These features can't be deleted because some are connected to hidden features.
+      has_wikidata_tag:
+        single: This feature can't be deleted because it has a Wikidata tag.
+        multiple: These features can't be deleted because some have Wikidata tags.
+    downgrade:
+      title: Downgrade
+      description:
+        building_address: Remove all non-address and non-building tags.
+        building: Remove all non-building tags.
+        address: Remove all non-address tags.
+      annotation:
+        building:
+          single: Downgraded a feature to a basic building.
+          multiple: "Downgraded {n} features to basic buildings."
+        address:
+          single: Downgraded a feature to an address.
+          multiple: "Downgraded {n} features to addresses."
+        multiple: "Downgraded {n} features."
+      has_wikidata_tag:
+        single: This feature can't be downgraded because it has a Wikidata tag.
+        multiple: These features can't be downgraded because some have Wikidata tags.
     add_member:
       annotation: Added a member to a relation.
     delete_member:
       annotation: Removed a member from a relation.
+    reorder_members:
+      annotation: Reordered a relation's members.
     connect:
       annotation:
         from_vertex:
@@ -494,6 +524,7 @@ en:
     overlays: Overlays
     imagery_source_faq: Imagery Info / Report a Problem
     reset: reset
+    reset_all: Reset All
     display_options: Display Options
     brightness: Brightness
     contrast: Contrast
@@ -531,6 +562,17 @@ en:
     map_features: Map Features
     autohidden: "These features have been automatically hidden because too many would be shown on the screen.  You can zoom in to edit them."
     osmhidden: "These features have been automatically hidden because the OpenStreetMap layer is hidden."
+  photo_overlays:
+    title: Photo Overlays
+    traffic_signs:
+      title: Traffic Signs
+    photo_type:
+      flat:
+        title: "Flat Photos"
+        tooltip: "Traditional photos"
+      panoramic:
+        title: "Panoramic Photos"
+        tooltip: "360° photos"
   feature:
     points:
       description: Points
@@ -946,7 +988,7 @@ en:
           description: '{var1} may have an outdated URL: {var2} did not contain keywords "{var3}".'
   streetside:
     tooltip: "Streetside photos from Microsoft"
-    title: "Photo Overlay (Bing Streetside)"
+    title: "Bing Streetside"
     report: Report a privacy concern with this image
     view_on_bing: "View on Bing Maps"
     hires: "High resolution"
@@ -957,14 +999,17 @@ en:
     tooltip: "Traffic signs from Mapillary (must enable Photo Overlay)"
     title: "Traffic Sign Overlay (Mapillary)"
   mapillary_points:
-    tooltip: "Point features from Mapillary (must enable Photo Overlay)"
-    title: "Point Features Overlay (Mapillary)"
+    tooltip: "Point features from Mapillary"
+    title: "Point Features"
   mapillary:
+    title: Mapillary
+    signs:
+      tooltip: "Traffic signs from Mapillary"
     view_on_mapillary: "View this image on Mapillary"
   openstreetcam_images:
     tooltip: "Street-level photos from OpenStreetCam"
-    title: "Photo Overlay (OpenStreetCam)"
   openstreetcam:
+    title: OpenStreetCam
     view_on_openstreetcam: "View this image on OpenStreetCam"
   note:
     note: Note
@@ -1247,13 +1292,6 @@ en:
         tip: "Crossing indoor features should use different levels."
       indoor-indoor_connectable:
         tip: "Crossing indoor features should be connected or use different levels."
-    deprecated_tag:
-      title: Deprecated Tags
-      single:
-        message: '{feature} has the outdated tag "{tag}"'
-      combination:
-        message: '{feature} has an outdated tag combination: {tags}'
-      tip: "Some tags become deprecated over time and should be replaced."
     disconnected_way:
       title: Disconnected Ways
       highway:
@@ -1263,6 +1301,13 @@ en:
       title: Generic Names
       message: '{feature} has the generic name "{name}"'
       tip: "Names should be the actual, on-the-ground names of features."
+    incompatible_source:
+      title: Incompatible Data Sources
+      google:
+        feature:
+          message: '{feature} lists Google as a data source'
+        tip: "Google products are proprietary and must not be used as references."
+      tip: "Source data must be licensed in a manner compatible with OpenStreetMap."
     many_deletions:
       title: Many Deletions
       points-lines-areas:
@@ -1288,10 +1333,23 @@ en:
       title: Misplaced Multipolygon Tags
       message: "{multipolygon} has misplaced tags"
       tip: "Multipolygons should be tagged on their relation, not their outer way."
+    outdated_tags:
+      title: Outdated Tags
+      message: '{feature} has outdated tags'
+      tip: "Some tags change over time and should be updated."
+    private_data:
+      title: Private Information
+      contact:
+        message: '{feature} might be tagged with private contact information'
+      tip: "Sensitive data like personal phone numbers should not be tagged."
     tag_suggests_area:
       title: Lines Tagged as Areas
       message: '{feature} should be a closed area based on the tag "{tag}"'
       tip: "Areas must have connected endpoints."
+    unknown_road:
+      title: Unknown Roads
+      message: "{feature} has no classification"
+      tip: "Roads without a specific type may not appear in maps or routing."
     fix:
       connect_almost_junction:
         annotation: Connected very close features.
@@ -1311,15 +1369,15 @@ en:
       move_tags:
         title: Move the tags
         annotation: Moved tags.
-      remove_deprecated_tag:
-        annotation: Removed an old tag.
-      remove_deprecated_tag_combo:
-        annotation: Removed an old tag combination.
       remove_from_relation:
         title: Remove from relation
       remove_generic_name:
         title: Remove the name
         annotation: Removed a generic name.
+      remove_private_info:
+        annotation: Removed private information.
+      remove_proprietary_data:
+        title: Remove any proprietary data
       remove_tag:
         title: Remove the tag
         annotation: Removed tag.
@@ -1329,6 +1387,8 @@ en:
         title: Reposition the features
       select_preset:
         title: Select a feature type
+      select_road_type:
+        title: Select a road type
       set_as_inner:
         title: Set as inner
       set_as_outer:
@@ -1336,12 +1396,13 @@ en:
       tag_as_disconnected:
         title: Tag as disconnected
         annotation: Tagged very close features as disconnected.
-      upgrade_tag:
-        title: Upgrade the tag
-        annotation: Upgraded an old tag.
-      upgrade_tag_combo:
+      tag_this_as_higher:
+        title: Tag this as higher
+      tag_this_as_lower:
+        title: Tag this as lower
+      upgrade_tags:
         title: Upgrade the tags
-        annotation: Upgraded an old tag combination.
+        annotation: Upgraded old tags.
       use_bridge_or_tunnel:
         title: Use a bridge or tunnel
       use_different_layers:

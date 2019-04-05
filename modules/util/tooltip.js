@@ -89,6 +89,7 @@ export function tooltip(klass) {
         selection.call(tooltip.destroy, '.tooltip');
     };
 
+    var isTouchEvent = false;
 
     function setup() {
         var root = d3_select(this);
@@ -118,12 +119,20 @@ export function tooltip(klass) {
         var place = _placement.apply(this, arguments);
         tip.classed(place, true);
 
+        root.on('touchstart.tooltip', function() {
+            // hack to avoid showing tooltips upon touch input
+            isTouchEvent = true;
+        });
         root.on('mouseenter.tooltip', show);
         root.on('mouseleave.tooltip', hide);
     }
 
 
     function show() {
+        if (isTouchEvent) {
+            isTouchEvent = false;
+            return;
+        }
         var root = d3_select(this);
         var content = _title.apply(this, arguments);
         var tip = root.selectAll('.tooltip-' + _id);
@@ -154,7 +163,7 @@ export function tooltip(klass) {
             pos = { x: outer.x - inner.w, y: outer.y + (outer.h - inner.h) / 2 };
             break;
             case 'bottom':
-            pos = { x: Math.max(0, outer.x + (outer.w - inner.w) / 2), y: outer.y + outer.h };
+            pos = { x: outer.x + (outer.w - inner.w) / 2, y: outer.y + outer.h };
             break;
         }
 

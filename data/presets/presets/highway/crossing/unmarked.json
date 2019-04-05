@@ -1,7 +1,6 @@
 {
     "fields": [
         "crossing",
-        "kerb",
         "tactile_paving"
     ],
     "geometry": [
@@ -23,5 +22,6 @@
         "value": "crossing"
     },
     "terms": [],
+    "matchScore": 0.95,
     "name": "Unmarked Crossing"
 }

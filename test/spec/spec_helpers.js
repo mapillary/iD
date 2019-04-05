@@ -36,38 +36,18 @@ mocha.setup({
 
 expect = chai.expect;
 
-window.d3 = iD.d3;   // TODO: remove
+window.d3 = iD.d3;   // TODO: remove if we can avoid exporting all of d3.js
 
-// Object.getOwnPropertySymbols polyfill (For PhantomJS / IE11) - #6001
-if (!Object.getOwnPropertySymbols) {
-  Object.defineProperty(Object.prototype, 'getOwnPropertySymbols', {
-    value: function() { return []; }
-  });
-}
 
-// Array.find polyfill (For PhantomJS / IE11)
-// https://tc39.github.io/ecma262/#sec-array.prototype.find
-if (!Array.prototype.find) {
-  Object.defineProperty(Array.prototype, 'find', {
-    value: function(predicate) {
-      if (this == null) {
-        throw new TypeError('"this" is null or not defined');
-      }
-      var o = Object(this);
-      var len = o.length >>> 0;
-      if (typeof predicate !== 'function') {
-        throw new TypeError('predicate must be a function');
-      }
-      var thisArg = arguments[1];
-      var k = 0;
-      while (k < len) {
-        var kValue = o[k];
-        if (predicate.call(thisArg, kValue, k, o)) {
-          return kValue;
-        }
-        k++;
-      }
-      return undefined;
+// workaround for `Array.from` polyfill in PhantomJS
+// https://github.com/openstreetmap/iD/issues/6087#issuecomment-476219308
+var __arrayfrom = Array.from;
+Array.from = function(what) {
+    if (what instanceof Set) {
+        var arr = [];
+        what.forEach(function(v) { arr.push(v); });
+        return arr;
+    } else {
+        return __arrayfrom.apply(null, arguments);
     }
-  });
-}
+};

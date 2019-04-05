@@ -1,7 +1,3 @@
-import _extend from 'lodash-es/extend';
-import _filter from 'lodash-es/filter';
-import _groupBy from 'lodash-es/groupBy';
-
 import {
     event as d3_event,
     select as d3_select
@@ -21,7 +17,7 @@ import { osmEntity, osmRelation } from '../osm';
 import { services } from '../services';
 import { svgIcon } from '../svg';
 import { uiCombobox, uiDisclosure } from './index';
-import { utilDisplayName, utilNoAuto, utilHighlightEntities } from '../util';
+import { utilArrayGroupBy, utilDisplayName, utilNoAuto, utilHighlightEntities } from '../util';
 
 
 export function uiRawMembershipEditor(context) {
@@ -54,7 +50,7 @@ export function uiRawMembershipEditor(context) {
         if (oldRole !== newRole) {
             _inChange = true;
             context.perform(
-                actionChangeMember(d.relation.id, _extend({}, d.member, { role: newRole }), d.index),
+                actionChangeMember(d.relation.id, Object.assign({}, d.member, { role: newRole }), d.index),
                 t('operations.change_role.annotation')
             );
         }
@@ -91,6 +87,9 @@ export function uiRawMembershipEditor(context) {
         this.blur();           // avoid keeping focus on the button
         if (d === 0) return;   // called on newrow (shoudn't happen)
 
+        // remove the hover-highlight styling
+        utilHighlightEntities([d.relation.id], false, context);
+
         context.perform(
             actionDeleteMember(d.relation.id, d.index),
             t('operations.delete_member.annotation')
@@ -121,10 +120,8 @@ export function uiRawMembershipEditor(context) {
         });
 
         // Dedupe identical names by appending relation id - see #2891
-        var dupeGroups = _filter(
-            _groupBy(result, 'value'),
-            function(v) { return v.length > 1; }
-        );
+        var dupeGroups = Object.values(utilArrayGroupBy(result, 'value'))
+            .filter(function(v) { return v.length > 1; });
 
         dupeGroups.forEach(function(group) {
             group.forEach(function(obj) {
@@ -190,16 +187,13 @@ export function uiRawMembershipEditor(context) {
                 .append('li')
                 .attr('class', 'member-row member-row-normal form-field');
 
-            itemsEnter.each(function(d){
-                // highlight the relation in the map while hovering on the list item
-                d3_select(this)
-                    .on('mouseover', function() {
-                        utilHighlightEntities([d.relation.id], true, context);
-                    })
-                    .on('mouseout', function() {
-                        utilHighlightEntities([d.relation.id], false, context);
-                    });
-            });
+            // highlight the relation in the map while hovering on the list item
+            itemsEnter.on('mouseover', function(d) {
+                    utilHighlightEntities([d.relation.id], true, context);
+                })
+                .on('mouseout', function(d) {
+                    utilHighlightEntities([d.relation.id], false, context);
+                });
 
             var labelEnter = itemsEnter
                 .append('label')

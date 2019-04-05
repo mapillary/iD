@@ -1,11 +1,14 @@
 export { validationAlmostJunction } from './almost_junction';
 export { validationCrossingWays } from './crossing_ways';
-export { validationDeprecatedTag } from './deprecated_tag';
 export { validationDisconnectedWay } from './disconnected_way';
 export { validationGenericName } from './generic_name';
+export { validationIncompatibleSource } from './incompatible_source';
 export { validationManyDeletions } from './many_deletions';
 export { validationMaprules } from './maprules';
 export { validationMissingRole } from './missing_role';
 export { validationMissingTag } from './missing_tag';
 export { validationOldMultipolygon } from './old_multipolygon';
+export { validationOutdatedTags } from './outdated_tags';
+export { validationPrivateData } from './private_data';
 export { validationTagSuggestsArea } from './tag_suggests_area';
+export { validationUnknownRoad } from './unknown_road';

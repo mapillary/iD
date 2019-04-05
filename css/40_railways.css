@@ -37,6 +37,13 @@ path.line.stroke.tag-railway {
     stroke-dasharray: 6;
 }
 
+path.line.casing.tag-railway.tag-railway-platform {
+    stroke-width: 0;
+}
+path.line.stroke.tag-railway.tag-railway-platform {
+    stroke-dasharray: none;
+}
+
 /* styles */
 path.line.casing.tag-railway {
     stroke: #555;

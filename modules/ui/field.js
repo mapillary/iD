@@ -1,7 +1,3 @@
-import _clone from 'lodash-es/clone';
-import _extend from 'lodash-es/extend';
-import _some from 'lodash-es/some';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 
 import {
@@ -19,7 +15,7 @@ import { utilRebind } from '../util';
 
 
 export function uiField(context, presetField, entity, options) {
-    options = _extend({
+    options = Object.assign({
         show: true,
         wrap: true,
         remove: true,
@@ -28,7 +24,7 @@ export function uiField(context, presetField, entity, options) {
     }, options);
 
     var dispatch = d3_dispatch('change');
-    var field = _clone(presetField);
+    var field = Object.assign({}, presetField);   // shallow copy
     var _show = options.show;
     var _state = '';
     var _tags = {};
@@ -61,14 +57,14 @@ export function uiField(context, presetField, entity, options) {
     function isModified() {
         if (!entity) return false;
         var original = context.graph().base().entities[entity.id];
-        return _some(field.keys, function(key) {
+        return field.keys.some(function(key) {
             return original ? _tags[key] !== original.tags[key] : _tags[key];
         });
     }
 
 
     function isPresent() {
-        return _some(field.keys, function(key) {
+        return field.keys.some(function(key) {
             if (field.type === 'multiCombo') {
                 for (var tagKey in _tags) {
                     if (tagKey.indexOf(key) === 0) {

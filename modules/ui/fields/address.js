@@ -1,8 +1,3 @@
-import _find from 'lodash-es/find';
-import _includes from 'lodash-es/includes';
-import _reduce from 'lodash-es/reduce';
-import _uniqBy from 'lodash-es/uniqBy';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { select as d3_select } from 'd3-selection';
 
@@ -10,7 +5,7 @@ import { dataAddressFormats } from '../../../data';
 import { geoExtent, geoChooseEdge, geoSphericalDistance } from '../../geo';
 import { services } from '../../services';
 import { uiCombobox } from '../index';
-import { utilGetSetValue, utilNoAuto, utilRebind } from '../../util';
+import { utilArrayUniqBy, utilGetSetValue, utilNoAuto, utilRebind } from '../../util';
 
 
 export function uiFieldAddress(field, context) {
@@ -44,7 +39,7 @@ export function uiFieldAddress(field, context) {
                 return a.dist - b.dist;
             });
 
-        return _uniqBy(streets, 'value');
+        return utilArrayUniqBy(streets, 'value');
 
         function isAddressable(d) {
             return d.tags.highway && d.tags.name && d.type === 'way';
@@ -70,7 +65,7 @@ export function uiFieldAddress(field, context) {
                 return a.dist - b.dist;
             });
 
-        return _uniqBy(cities, 'value');
+        return utilArrayUniqBy(cities, 'value');
 
 
         function isAddressable(d) {
@@ -108,16 +103,24 @@ export function uiFieldAddress(field, context) {
                 return a.dist - b.dist;
             });
 
-        return _uniqBy(results, 'value');
+        return utilArrayUniqBy(results, 'value');
     }
 
 
     function countryCallback(err, countryCode) {
         if (err) return;
+        countryCode = countryCode.toLowerCase();
 
-        var addressFormat = _find(dataAddressFormats, function (a) {
-            return a && a.countryCodes && _includes(a.countryCodes, countryCode.toLowerCase());
-        }) || dataAddressFormats[0];
+        var addressFormat;
+        for (var i = 0; i < dataAddressFormats.length; i++) {
+            var format = dataAddressFormats[i];
+            if (!format.countryCodes) {
+                addressFormat = format;   // choose the default format, keep going
+            } else if (format.countryCodes.indexOf(countryCode) !== -1) {
+                addressFormat = format;   // choose the country format, stop here
+                break;
+            }
+        }
 
         var dropdowns = addressFormat.dropdowns || [
             'city', 'county', 'country', 'district', 'hamlet',
@@ -132,7 +135,7 @@ export function uiFieldAddress(field, context) {
 
         function row(r) {
             // Normalize widths.
-            var total = _reduce(r, function(sum, key) {
+            var total = r.reduce(function(sum, key) {
                 return sum + (widths[key] || 0.5);
             }, 0);
 
@@ -155,7 +158,7 @@ export function uiFieldAddress(field, context) {
             .append('input')
             .property('type', 'text')
             .attr('placeholder', function (d) {
-                var localkey = d.id + '!' + countryCode.toLowerCase();
+                var localkey = d.id + '!' + countryCode;
                 var tkey = field.strings.placeholders[localkey] ? localkey : d.id;
                 return field.t('placeholders.' + tkey);
             })

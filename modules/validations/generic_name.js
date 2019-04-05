@@ -1,16 +1,16 @@
-import _clone from 'lodash-es/clone';
+import { filters } from 'name-suggestion-index';
+
 import { t } from '../util/locale';
 import { utilPreset } from '../util';
 import { validationIssue, validationIssueFix } from '../core/validator';
 import { actionChangeTags } from '../actions';
-import { discardNames } from '../../node_modules/name-suggestion-index/config/filters.json';
 
 
 export function validationGenericName() {
     var type = 'generic_name';
 
     // known list of generic names (e.g. "bar")
-    var discardNamesRegexes = discardNames.map(function(discardName) {
+    var discardNamesRegexes = filters.discardNames.map(function(discardName) {
         return new RegExp(discardName, 'i');
     });
 
@@ -50,35 +50,32 @@ export function validationGenericName() {
 
 
     var validation = function(entity, context) {
-        var issues = [];
         var generic = isGenericName(entity);
-        if (generic) {
-            var preset = utilPreset(entity, context);
-            issues.push(new validationIssue({
-                type: type,
-                severity: 'warning',
-                message: t('issues.generic_name.message', {feature: preset.name(), name: generic}),
-                tooltip: t('issues.generic_name.tip'),
-                entities: [entity],
-                fixes: [
-                    new validationIssueFix({
-                        icon: 'iD-operation-delete',
-                        title: t('issues.fix.remove_generic_name.title'),
-                        onClick: function() {
-                            var entity = this.issue.entities[0];
-                            var tags = _clone(entity.tags);
-                            delete tags.name;
-                            context.perform(
-                                actionChangeTags(entity.id, tags),
-                                t('issues.fix.remove_generic_name.annotation')
-                            );
-                        }
-                    })
-                ]
-            }));
-        }
+        if (!generic) return [];
 
-        return issues;
+        var preset = utilPreset(entity, context);
+        return [new validationIssue({
+            type: type,
+            severity: 'warning',
+            message: t('issues.generic_name.message', {feature: preset.name(), name: generic}),
+            tooltip: t('issues.generic_name.tip'),
+            entities: [entity],
+            fixes: [
+                new validationIssueFix({
+                    icon: 'iD-operation-delete',
+                    title: t('issues.fix.remove_generic_name.title'),
+                    onClick: function() {
+                        var entity = this.issue.entities[0];
+                        var tags = Object.assign({}, entity.tags);   // shallow copy
+                        delete tags.name;
+                        context.perform(
+                            actionChangeTags(entity.id, tags),
+                            t('issues.fix.remove_generic_name.annotation')
+                        );
+                    }
+                })
+            ]
+        })];
     };
 
     validation.type = type;

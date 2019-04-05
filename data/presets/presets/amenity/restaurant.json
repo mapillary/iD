@@ -9,20 +9,23 @@
         "outdoor_seating"
     ],
     "moreFields": [
-        "takeaway",
-        "delivery",
+        "air_conditioning",
+        "bar",
+        "brewery",
         "capacity",
+        "delivery",
         "diet_multi",
-        "smoking",
+        "email",
+        "fax",
         "internet_access",
         "internet_access/fee",
         "internet_access/ssid",
-        "website",
+        "microbrewery",
         "phone",
-        "email",
-        "fax",
-        "wheelchair",
-        "bar"
+        "smoking",
+        "takeaway",
+        "website",
+        "wheelchair"
     ],
     "geometry": [
         "point",

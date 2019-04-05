@@ -1,6 +1,3 @@
-import _find from 'lodash-es/find';
-import _intersection from 'lodash-es/intersection';
-
 import {
     event as d3_event,
     select as d3_select
@@ -32,7 +29,7 @@ import {
 import { modeBrowse, modeSelect } from './index';
 import { osmJoinWays, osmNode } from '../osm';
 import { uiFlash } from '../ui';
-import { utilKeybinding } from '../util';
+import { utilArrayIntersection, utilKeybinding } from '../util';
 
 
 
@@ -82,7 +79,7 @@ export function modeDragNode(context) {
         if (nodeGeometry === 'vertex' && targetGeometry === 'vertex') {
             var nodeParentWayIDs = context.graph().parentWays(nodeEntity);
             var targetParentWayIDs = context.graph().parentWays(targetEntity);
-            var sharedParentWays = _intersection(nodeParentWayIDs, targetParentWayIDs);
+            var sharedParentWays = utilArrayIntersection(nodeParentWayIDs, targetParentWayIDs);
             // if both vertices are part of the same way
             if (sharedParentWays.length !== 0) {
                 // if the nodes are next to each other, they are merged
@@ -311,7 +308,7 @@ export function modeDragNode(context) {
                 // find active ring and test it for self intersections
                 for (k = 0; k < rings.length; k++) {
                     nodes = rings[k].nodes;
-                    if (_find(nodes, function(n) { return n.id === entity.id; })) {
+                    if (nodes.find(function(n) { return n.id === entity.id; })) {
                         activeIndex = k;
                         if (geoHasSelfIntersections(nodes, entity.id)) {
                             return true;

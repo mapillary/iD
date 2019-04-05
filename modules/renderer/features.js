@@ -1,14 +1,8 @@
-import _clone from 'lodash-es/clone';
-import _groupBy from 'lodash-es/groupBy';
-import _reduce from 'lodash-es/reduce';
-import _some from 'lodash-es/some';
-import _union from 'lodash-es/union';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 
 import { osmEntity } from '../osm';
 import { utilRebind } from '../util/rebind';
-import { utilQsString, utilStringQs } from '../util';
+import { utilArrayGroupBy, utilArrayUnion, utilQsString, utilStringQs } from '../util';
 
 
 export function rendererFeatures(context) {
@@ -280,8 +274,8 @@ export function rendererFeatures(context) {
 
     features.gatherStats = function(d, resolver, dimensions) {
         var needsRedraw = false;
-        var type = _groupBy(d, function(ent) { return ent.type; });
-        var entities = [].concat(type.relation || [], type.way || [], type.node || []);
+        var types = utilArrayGroupBy(d, 'type');
+        var entities = [].concat(types.relation || [], types.way || [], types.node || []);
         var currHidden, geometry, matches, i, j;
 
         for (i = 0; i < _keys.length; i++) {
@@ -377,7 +371,7 @@ export function rendererFeatures(context) {
                             //
                             var pkey = osmEntity.key(parents[0]);
                             if (_cache[pkey] && _cache[pkey].matches) {
-                                matches = _clone(_cache[pkey].matches);
+                                matches = Object.assign({}, _cache[pkey].matches);  // shallow copy
                                 continue;
                             }
                         }
@@ -473,13 +467,13 @@ export function rendererFeatures(context) {
         }
 
         // gather ways connected to child nodes..
-        connections = _reduce(childNodes, function(result, e) {
-            return resolver.isShared(e) ? _union(result, resolver.parentWays(e)) : result;
+        connections = childNodes.reduce(function(result, e) {
+            return resolver.isShared(e) ? utilArrayUnion(result, resolver.parentWays(e)) : result;
         }, connections);
 
-        return connections.length ? _some(connections, function(e) {
+        return connections.some(function(e) {
             return features.isHidden(e, resolver, e.geometry(resolver));
-        }) : false;
+        });
     };
 
 

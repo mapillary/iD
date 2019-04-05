@@ -16,10 +16,22 @@
         "leisure": "track",
         "sport": "horse_racing"
     },
+    "addTags": {
+        "leisure": "track",
+        "sport": "horse_racing",
+        "highway": "bridleway"
+    },
+    "removeTags": {
+        "leisure": "track",
+        "sport": "horse_racing",
+        "highway": "bridleway"
+    },
     "terms": [
-        "race*",
-        "horse",
-        "track"
+        "equestrian race track",
+        "horse race betting",
+        "horseracing",
+        "horsetrack",
+        "horse racetrack"
     ],
-    "name": "Racetrack (Horse Racing)"
+    "name": "Horse Racing Track"
 }

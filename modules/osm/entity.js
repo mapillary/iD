@@ -1,12 +1,7 @@
-import _clone from 'lodash-es/clone';
-import _keys from 'lodash-es/keys';
-import _every from 'lodash-es/every';
-import _union from 'lodash-es/union';
-import _without from 'lodash-es/without';
-
 import { debug } from '../index';
 import { osmIsInterestingTag } from './tags';
 import { dataDeprecated } from '../../data/index';
+import { utilArrayUnion } from '../util';
 
 
 export function osmEntity(attrs) {
@@ -55,6 +50,29 @@ osmEntity.key = function(entity) {
     return entity.id + 'v' + (entity.v || 0);
 };
 
+var _deprecatedTagValuesByKey;
+
+osmEntity.deprecatedTagValuesByKey = function() {
+    if (!_deprecatedTagValuesByKey) {
+        _deprecatedTagValuesByKey = {};
+        dataDeprecated.forEach(function(d) {
+            var oldKeys = Object.keys(d.old);
+            if (oldKeys.length === 1) {
+                var oldKey = oldKeys[0];
+                var oldValue = d.old[oldKey];
+                if (oldValue !== '*') {
+                    if (!_deprecatedTagValuesByKey[oldKey]) {
+                        _deprecatedTagValuesByKey[oldKey] = [oldValue];
+                    } else {
+                        _deprecatedTagValuesByKey[oldKey].push(oldValue);
+                    }
+                }
+            }
+        });
+    }
+    return _deprecatedTagValuesByKey;
+};
+
 
 osmEntity.prototype = {
 
@@ -99,7 +117,7 @@ osmEntity.prototype = {
         if (copies[this.id])
             return copies[this.id];
 
-        var copy = osmEntity(this, {id: undefined, user: undefined, version: undefined});
+        var copy = osmEntity(this, { id: undefined, user: undefined, version: undefined });
         copies[this.id] = copy;
 
         return copy;
@@ -117,24 +135,25 @@ osmEntity.prototype = {
 
 
     update: function(attrs) {
-        return osmEntity(this, attrs, {v: 1 + (this.v || 0)});
+        return osmEntity(this, attrs, { v: 1 + (this.v || 0) });
     },
 
 
     mergeTags: function(tags) {
-        var merged = _clone(this.tags), changed = false;
+        var merged = Object.assign({}, this.tags);   // shallow copy
+        var changed = false;
         for (var k in tags) {
-            var t1 = merged[k],
-                t2 = tags[k];
+            var t1 = merged[k];
+            var t2 = tags[k];
             if (!t1) {
                 changed = true;
                 merged[k] = t2;
             } else if (t1 !== t2) {
                 changed = true;
-                merged[k] = _union(t1.split(/;\s*/), t2.split(/;\s*/)).join(';');
+                merged[k] = utilArrayUnion(t1.split(/;\s*/), t2.split(/;\s*/)).join(';');
             }
         }
-        return changed ? this.update({tags: merged}) : this;
+        return changed ? this.update({ tags: merged }) : this;
     },
 
 
@@ -144,7 +163,7 @@ osmEntity.prototype = {
 
 
     hasNonGeometryTags: function() {
-        return _without(Object.keys(this.tags), 'area').length > 0;
+        return Object.keys(this.tags).some(function(k) { return k !== 'area'; });
     },
 
     hasParentRelations: function(resolver) {
@@ -152,7 +171,7 @@ osmEntity.prototype = {
     },
 
     hasInterestingTags: function() {
-        return _keys(this.tags).some(osmIsInterestingTag);
+        return Object.keys(this.tags).some(osmIsInterestingTag);
     },
 
 
@@ -172,13 +191,27 @@ osmEntity.prototype = {
 
         var deprecated = [];
         dataDeprecated.forEach(function(d) {
-            var matchesDeprecatedTags = _every(Object.keys(d.old), function(key) {
+            var matchesDeprecatedTags = Object.keys(d.old).every(function(key) {
                 if (!tags[key]) return false;
                 if (d.old[key] === '*') return true;
 
                 var vals = tags[key].split(';').filter(Boolean);
-                if (!vals.length) return false;
-                return vals.indexOf(d.old[key]) !== -1;
+                if (vals.length === 0) {
+                    return false;
+                } else if (vals.length > 1) {
+                    return vals.indexOf(d.old[key]) !== -1;
+                } else {
+                    if (tags[key] === d.old[key]) {
+                        if (d.old[key] === d.replace[key]) {
+                            return !Object.keys(d.replace).every(function(key) {
+                                return tags[key] === d.replace[key];
+                            });
+                        } else {
+                            return true;
+                        }
+                    }
+                }
+                return false;
             });
             if (matchesDeprecatedTags) {
                 deprecated.push(d);

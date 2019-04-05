@@ -5,14 +5,16 @@
         "area"
     ],
     "fields": [
+        "name",
         "operator",
+        "resource",
         "direction"
     ],
     "terms": [
-        "entrance",
-        "underground",
-        "mine",
-        "cave"
+        "cave",
+        "horizontal mine entrance",
+        "tunnel",
+        "underground"
     ],
     "tags": {
         "man_made": "adit"

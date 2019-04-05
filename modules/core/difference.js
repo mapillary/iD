@@ -1,7 +1,5 @@
-import _difference from 'lodash-es/difference';
-import _each from 'lodash-es/each';
-import _isEqual from 'lodash-es/isEqual';
-import _values from 'lodash-es/values';
+import deepEqual from 'fast-deep-equal';
+import { utilArrayDifference } from '../util';
 
 
 /*
@@ -27,12 +25,12 @@ export function coreDifference(base, head) {
                 h.loc[0] !== b.loc[0] || h.loc[1] !== b.loc[1]) return true;
         }
         if (h.nodes || b.nodes) {
-            if (!_isEqual(h.nodes, b.nodes)) return true;
+            if (!deepEqual(h.nodes, b.nodes)) return true;
         }
         if (h.members || b.members) {
-            if (!_isEqual(h.members, b.members)) return true;
+            if (!deepEqual(h.members, b.members)) return true;
         }
-        return !_isEqual(h.tags, b.tags);
+        return !deepEqual(h.tags, b.tags);
     }
 
 
@@ -42,7 +40,7 @@ export function coreDifference(base, head) {
         h = head.entities[k];
         b = base.entities[k];
         if (changed(h, b)) {
-            _changes[k] = {base: b, head: h};
+            _changes[k] = { base: b, head: h };
             _length++;
         }
     }
@@ -53,7 +51,7 @@ export function coreDifference(base, head) {
         h = head.entities[k];
         b = base.entities[k];
         if (!_changes[k] && changed(h, b)) {
-            _changes[k] = {base: b, head: h};
+            _changes[k] = { base: b, head: h };
             _length++;
         }
     }
@@ -84,8 +82,10 @@ export function coreDifference(base, head) {
 
     _diff.extantIDs = function extantIDs() {
         var result = [];
-        _each(_changes, function(change, id) {
-            if (change.head) result.push(id);
+        Object.keys(_changes).forEach(function(id) {
+            if (_changes[id].head) {
+                result.push(id);
+            }
         });
         return result;
     };
@@ -93,8 +93,10 @@ export function coreDifference(base, head) {
 
     _diff.modified = function modified() {
         var result = [];
-        _each(_changes, function(change) {
-            if (change.base && change.head) result.push(change.head);
+        Object.values(_changes).forEach(function(change) {
+            if (change.base && change.head) {
+                result.push(change.head);
+            }
         });
         return result;
     };
@@ -102,7 +104,7 @@ export function coreDifference(base, head) {
 
     _diff.created = function created() {
         var result = [];
-        _each(_changes, function(change) {
+        Object.values(_changes).forEach(function(change) {
             if (!change.base && change.head) result.push(change.head);
         });
         return result;
@@ -111,7 +113,7 @@ export function coreDifference(base, head) {
 
     _diff.deleted = function deleted() {
         var result = [];
-        _each(_changes, function(change) {
+        Object.values(_changes).forEach(function(change) {
             if (change.base && !change.head) result.push(change.base);
         });
         return result;
@@ -148,8 +150,8 @@ export function coreDifference(base, head) {
                 addEntity(change.base, base, 'deleted');
 
             } else if (change.base && change.head) { // modified vertex
-                var moved    = !_isEqual(change.base.loc,  change.head.loc);
-                var retagged = !_isEqual(change.base.tags, change.head.tags);
+                var moved    = !deepEqual(change.base.loc,  change.head.loc);
+                var retagged = !deepEqual(change.base.tags, change.head.tags);
 
                 if (moved) {
                     addParents(change.head);
@@ -167,7 +169,7 @@ export function coreDifference(base, head) {
             }
         }
 
-        return _values(relevant);
+        return Object.values(relevant);
     };
 
 
@@ -194,12 +196,12 @@ export function coreDifference(base, head) {
                 var nb = b ? b.nodes : [];
                 var diff, i;
 
-                diff = _difference(nh, nb);
+                diff = utilArrayDifference(nh, nb);
                 for (i = 0; i < diff.length; i++) {
                     result[diff[i]] = head.hasEntity(diff[i]);
                 }
 
-                diff = _difference(nb, nh);
+                diff = utilArrayDifference(nb, nh);
                 for (i = 0; i < diff.length; i++) {
                     result[diff[i]] = head.hasEntity(diff[i]);
                 }

@@ -1,83 +1,104 @@
 
-import { select as d3_select, selectAll as d3_selectAll } from 'd3-selection';
+import {
+    select as d3_select
+} from 'd3-selection';
 
-import { svgIcon } from '../svg';
-import { t, textDirection } from '../util/locale';
-import { tooltip } from '../util/tooltip';
-
-import { uiFullScreen } from './full_screen';
-import { uiModes } from './modes';
-import { uiNotes } from './notes';
-import { uiSave } from './save';
-import { uiSearchAdd } from './search_add';
-import { uiTooltipHtml } from './tooltipHtml';
-import { uiUndoRedo } from './undo_redo';
+import _debounce from 'lodash-es/debounce';
+import { /*uiToolAddFavorite, uiToolAddRecent, uiToolSearchAdd, */ uiToolOldDrawModes, uiToolNotes, uiToolSave, uiToolSidebarToggle, uiToolUndoRedo } from './tools';
 
 
 export function uiTopToolbar(context) {
 
+    var sidebarToggle = uiToolSidebarToggle(context),
+        modes = uiToolOldDrawModes(context),
+        //searchAdd = uiToolSearchAdd(context),
+        //addFavorite = uiToolAddFavorite(context),
+        //addRecent = uiToolAddRecent(context),
+        notes = uiToolNotes(context),
+        undoRedo = uiToolUndoRedo(context),
+        save = uiToolSave(context);
+
+    function notesEnabled() {
+        var noteLayer = context.layers().layer('notes');
+        return noteLayer && noteLayer.enabled();
+    }
 
     function topToolbar(bar) {
 
-        // Leading area button group (Sidebar toggle)
-        var leadingArea = bar
-            .append('div')
-            .attr('class', 'tool-group leading-area');
+        var debouncedUpdate = _debounce(update, 500, { leading: true, trailing: true });
+        context.layers()
+            .on('change.topToolbar', debouncedUpdate);
 
-        var sidebarButton = leadingArea
-            .append('div')
-            .append('button')
-            .attr('class', 'sidebar-toggle bar-button')
-            .attr('tabindex', -1)
-            .on('click', function() {
-                context.ui().sidebar.toggle();
-            })
-            .call(tooltip()
-                .placement('bottom')
-                .html(true)
-                .title(uiTooltipHtml(t('sidebar.tooltip'), t('sidebar.key')))
-            );
+        context.presets()
+            .on('favoritePreset.topToolbar', update)
+            .on('recentsChange.topToolbar', update);
 
-        var iconSuffix = textDirection === 'rtl' ? 'right' : 'left';
-        sidebarButton
-            .call(svgIcon('#iD-icon-sidebar-' + iconSuffix));
+        update();
 
-        leadingArea
-            .append('div')
-            .attr('class', 'full-screen bar-group')
-            .call(uiFullScreen(context));
+        function update() {
 
+            var tools = [
+                sidebarToggle,
+                'spacer',
+                modes
+            //    searchAdd
+            ];
+            /*
+            if (context.presets().getFavorites().length > 0) {
+                tools.push(addFavorite);
+            }
 
-        // Center area button group (Point/Line/Area/Note mode buttons)
-        var centerArea = bar
-            .append('div')
-            .attr('class', 'tool-group center-area');
+            if (addRecent.shouldShow()) {
+                tools.push(addRecent);
+            }*/
 
-        var addArea = centerArea.append('div')
-            .attr('class', 'search-add');
+            tools.push('spacer');
 
-        addArea.call(uiSearchAdd(context), bar);
-        addArea.call(uiModes(context), bar);
+            if (notesEnabled()) {
+                tools = tools.concat([notes, 'spacer']);
+            }
 
-        centerArea.append('div')
-            .attr('class', 'notes')
-            .call(uiNotes(context), bar);
+            tools = tools.concat([undoRedo, save]);
 
+            var toolbarItems = bar.selectAll('.toolbar-item')
+                .data(tools, function(d) {
+                    return d.id || d;
+                });
 
-        // Trailing area button group (Undo/Redo save buttons)
-        var trailingArea = bar
-            .append('div')
-            .attr('class', 'tool-group trailing-area');
+            toolbarItems.exit()
+                .each(function(d) {
+                    if (d.uninstall) {
+                        d.uninstall();
+                    }
+                })
+                .remove();
 
-        trailingArea
-            .append('div')
-            .attr('class', 'joined')
-            .call(uiUndoRedo(context));
+            var itemsEnter = toolbarItems
+                .enter()
+                .append('div')
+                .attr('class', function(d) {
+                    var classes = 'toolbar-item ' + (d.id || d).replace('_', '-');
+                    if (d.klass) classes += ' ' + d.klass;
+                    return classes;
+                });
 
-        trailingArea
-            .append('div')
-            .attr('class', 'save-wrap')
-            .call(uiSave(context));
+            var actionableItems = itemsEnter.filter(function(d) { return d !== 'spacer'; });
+
+            actionableItems
+                .append('div')
+                .attr('class', 'item-content')
+                .each(function(d) {
+                    d3_select(this).call(d.render, bar);
+                });
+
+            actionableItems
+                .append('div')
+                .attr('class', 'item-label')
+                .text(function(d) {
+                    return d.label;
+                });
+        }
+
     }
 
     return topToolbar;

@@ -1,36 +1,17 @@
-import _chunk from 'lodash-es/chunk';
-import _cloneDeep from 'lodash-es/cloneDeep';
-import _extend from 'lodash-es/extend';
-import _forEach from 'lodash-es/forEach';
-import _find from 'lodash-es/find';
-import _groupBy from 'lodash-es/groupBy';
-import _isEmpty from 'lodash-es/isEmpty';
-import _map from 'lodash-es/map';
 import _throttle from 'lodash-es/throttle';
-import _uniq from 'lodash-es/uniq';
-
-import rbush from 'rbush';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { xml as d3_xml } from 'd3-request';
 
 import osmAuth from 'osm-auth';
+import rbush from 'rbush';
+
 import { JXON } from '../util/jxon';
 import { geoExtent, geoVecAdd } from '../geo';
-
+import { osmEntity, osmNode, osmNote, osmRelation, osmWay } from '../osm';
 import {
-    osmEntity,
-    osmNode,
-    osmNote,
-    osmRelation,
-    osmWay
-} from '../osm';
-
-import {
-    utilRebind,
-    utilIdleWorker,
-    utilTiler,
-    utilQsString
+    utilArrayChunk, utilArrayGroupBy, utilArrayUniq, utilRebind,
+    utilIdleWorker, utilTiler, utilQsString
 } from '../util';
 
 
@@ -78,10 +59,10 @@ function abortRequest(i) {
 
 
 function abortUnwantedRequests(cache, tiles) {
-    _forEach(cache.inflight, function(v, k) {
-        var wanted = _find(tiles, function(tile) { return k === tile.id; });
+    Object.keys(cache.inflight).forEach(function(k) {
+        var wanted = tiles.find(function(tile) { return k === tile.id; });
         if (!wanted) {
-            abortRequest(v);
+            abortRequest(cache.inflight[k]);
             delete cache.inflight[k];
         }
     });
@@ -295,7 +276,7 @@ var parsers = {
 
 
 function parseXML(xml, callback, options) {
-    options = _extend({ skipSeen: true }, options);
+    options = Object.assign({ skipSeen: true }, options);
     if (!xml || !xml.childNodes) {
         return callback({ message: 'No XML', status: -1 });
     }
@@ -379,9 +360,9 @@ export default {
         _userDetails = undefined;
         _rateLimitError = undefined;
 
-        _forEach(_tileCache.inflight, abortRequest);
-        _forEach(_noteCache.inflight, abortRequest);
-        _forEach(_noteCache.inflightPost, abortRequest);
+        Object.values(_tileCache.inflight).forEach(abortRequest);
+        Object.values(_noteCache.inflight).forEach(abortRequest);
+        Object.values(_noteCache.inflightPost).forEach(abortRequest);
         if (_changeset.inflight) abortRequest(_changeset.inflight);
 
         _tileCache = { loaded: {}, inflight: {}, seen: {} };
@@ -440,7 +421,7 @@ export default {
     // Generic method to load data from the OSM API
     // Can handle either auth or unauth calls.
     loadFromAPI: function(path, callback, options) {
-        options = _extend({ skipSeen: true }, options);
+        options = Object.assign({ skipSeen: true }, options);
         var that = this;
         var cid = _connectionID;
 
@@ -527,13 +508,14 @@ export default {
     // GET /api/0.6/[nodes|ways|relations]?#parameters
     loadMultiple: function(ids, callback) {
         var that = this;
+        var groups = utilArrayGroupBy(utilArrayUniq(ids), osmEntity.id.type);
 
-        _forEach(_groupBy(_uniq(ids), osmEntity.id.type), function(v, k) {
-            var type = k + 's';
-            var osmIDs = _map(v, osmEntity.id.toOSM);
+        Object.keys(groups).forEach(function(k) {
+            var type = k + 's';   // nodes, ways, relations
+            var osmIDs = groups[k].map(function(id) { return osmEntity.id.toOSM(id); });
             var options = { skipSeen: false };
 
-            _forEach(_chunk(osmIDs, 150), function(arr) {
+            utilArrayChunk(osmIDs, 150).forEach(function(arr) {
                 that.loadFromAPI(
                     '/api/0.6/' + type + '?' + type + '=' + arr.join(),
                     function(err, entities) {
@@ -624,7 +606,7 @@ export default {
         var toLoad = [];
         var cached = [];
 
-        _uniq(uids).forEach(function(uid) {
+        utilArrayUniq(uids).forEach(function(uid) {
             if (_userCache.user[uid]) {
                 delete _userCache.toLoad[uid];
                 cached.push(_userCache.user[uid]);
@@ -638,7 +620,7 @@ export default {
             if (!this.authenticated()) return;  // require auth
         }
 
-        _chunk(toLoad, 150).forEach(function(arr) {
+        utilArrayChunk(toLoad, 150).forEach(function(arr) {
             oauth.xhr(
                 { method: 'GET', path: '/api/0.6/users?users=' + arr.join() },
                 wrapcb(this, done, _connectionID)
@@ -799,16 +781,16 @@ export default {
         var tiles = tiler.zoomExtent([_tileZoom, _tileZoom]).getTiles(projection);
 
         // abort inflight requests that are no longer needed
-        var hadRequests = !_isEmpty(_tileCache.inflight);
+        var hadRequests = hasInflightRequests();
         abortUnwantedRequests(_tileCache, tiles);
-        if (hadRequests && _isEmpty(_tileCache.inflight)) {
+        if (hadRequests && !hasInflightRequests()) {
             dispatch.call('loaded');    // stop the spinner
         }
 
         // issue new requests..
         tiles.forEach(function(tile) {
             if (_tileCache.loaded[tile.id] || _tileCache.inflight[tile.id]) return;
-            if (_isEmpty(_tileCache.inflight)) {
+            if (!hasInflightRequests()) {
                 dispatch.call('loading');   // start the spinner
             }
 
@@ -821,22 +803,26 @@ export default {
                         _tileCache.loaded[tile.id] = true;
                     }
                     if (callback) {
-                        callback(err, _extend({ data: parsed }, tile));
+                        callback(err, Object.assign({ data: parsed }, tile));
                     }
-                    if (_isEmpty(_tileCache.inflight)) {
+                    if (!hasInflightRequests()) {
                         dispatch.call('loaded');     // stop the spinner
                     }
                 },
                 options
             );
         });
+
+        function hasInflightRequests() {
+            return Object.keys(_tileCache.inflight).length;
+        }
     },
 
 
     // Load notes from the API in tiles
     // GET /api/0.6/notes?bbox=
     loadNotes: function(projection, noteOptions) {
-        noteOptions = _extend({ limit: 10000, closed: 7 }, noteOptions);
+        noteOptions = Object.assign({ limit: 10000, closed: 7 }, noteOptions);
         if (_off) return;
 
         var that = this;
@@ -978,7 +964,7 @@ export default {
     switch: function(options) {
         urlroot = options.urlroot;
 
-        oauth.options(_extend({
+        oauth.options(Object.assign({
             url: urlroot,
             loading: authLoading,
             done: authDone
@@ -991,8 +977,8 @@ export default {
     },
 
 
-    toggle: function(_) {
-        _off = !_;
+    toggle: function(val) {
+        _off = !val;
         return this;
     },
 
@@ -1006,11 +992,32 @@ export default {
     // This is used to save/restore the state when entering/exiting the walkthrough
     // Also used for testing purposes.
     caches: function(obj) {
+        function cloneDeep(source) {
+            return JSON.parse(JSON.stringify(source));
+        }
+
+        function cloneNoteCache(source) {
+            var target = {};
+            Object.keys(source).forEach(function(k) {
+                if (k === 'rtree') {
+                    target.rtree = rbush().fromJSON(source.rtree.toJSON());
+                } else if (k === 'note') {
+                    target.note = {};
+                    Object.keys(source.note).forEach(function(id) {
+                        target.note[id] = osmNote(source.note[id]);
+                    });
+                } else {
+                    target[k] = cloneDeep(source[k]);
+                }
+            });
+            return target;
+        }
+
         if (!arguments.length) {
             return {
-                tile: _cloneDeep(_tileCache),
-                note: _cloneDeep(_noteCache),
-                user: _cloneDeep(_userCache)
+                tile: cloneDeep(_tileCache),
+                note: cloneNoteCache(_noteCache),
+                user: cloneDeep(_userCache)
             };
         }
 
@@ -1084,9 +1091,9 @@ export default {
     },
 
 
-    tileZoom: function(_) {
+    tileZoom: function(val) {
         if (!arguments.length) return _tileZoom;
-        _tileZoom = _;
+        _tileZoom = val;
         return this;
     },
 

@@ -1,5 +1,3 @@
-import _filter from 'lodash-es/filter';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { select as d3_select } from 'd3-selection';
 
@@ -132,9 +130,8 @@ export function uiSuccess(context) {
         var matchIDs = matchFeatures.map(function(feature) { return feature.id; });
 
         // Gather community resources that are either global or match a polygon.
-        var matchResources = _filter(data.community.resources, function(v) {
-            return !v.featureId || matchIDs.indexOf(v.featureId) !== -1;
-        });
+        var matchResources = Object.values(data.community.resources)
+            .filter(function(v) { return !v.featureId || matchIDs.indexOf(v.featureId) !== -1; });
 
         if (matchResources.length) {
             // sort by size ascending, then by community rank

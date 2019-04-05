@@ -11,10 +11,13 @@
     ],
     "moreFields": [
         "covered",
+        "flood_prone",
+        "incline",
         "lanes",
         "lit",
         "maxheight",
         "maxspeed/advisory",
+        "maxweight_bridge",
         "oneway/bicycle"
     ],
     "geometry": [
@@ -27,5 +30,6 @@
         "road",
         "street"
     ],
+    "matchScore": 0.9,
     "name": "Service Road"
 }

@@ -1,22 +1,10 @@
-import _compact from 'lodash-es/compact';
-import _map from 'lodash-es/map';
 import _throttle from 'lodash-es/throttle';
-import _values from 'lodash-es/values';
 
-import { set as d3_set } from 'd3-collection';
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { interpolate as d3_interpolate } from 'd3-interpolate';
 import { scaleLinear as d3_scaleLinear } from 'd3-scale';
-
-import {
-    event as d3_event,
-    select as d3_select
-} from 'd3-selection';
-
-import {
-    zoom as d3_zoom,
-    zoomIdentity as d3_zoomIdentity
-} from 'd3-zoom';
+import { event as d3_event, select as d3_select } from 'd3-selection';
+import { zoom as d3_zoom, zoomIdentity as d3_zoomIdentity } from 'd3-zoom';
 
 import { t } from '../util/locale';
 import { geoExtent, geoRawMercator, geoScaleToZoom, geoZoomToScale } from '../geo';
@@ -107,22 +95,29 @@ export function rendererMap(context) {
             osm.on('change.map', immediateRedraw);
         }
 
+        function didUndoOrRedo(stack, targetTransform) {
+            var mode = context.mode().id;
+            if (mode !== 'browse' && mode !== 'select') return;
+
+            var followSelected = false;
+            if (Array.isArray(stack.selectedIDs)) {
+                followSelected = (stack.selectedIDs.length === 1 && stack.selectedIDs[0][0] === 'n');
+                context.enter(
+                    modeSelect(context, stack.selectedIDs).follow(followSelected)
+                );
+            }
+            if (!followSelected && targetTransform) {
+                map.transformEase(targetTransform);
+            }
+        }
+
         context.history()
             .on('change.map', immediateRedraw)
-            .on('undone.map redone.map', function(stack) {
-                var mode = context.mode().id;
-                if (mode !== 'browse' && mode !== 'select') return;
-
-                var followSelected = false;
-                if (Array.isArray(stack.selectedIDs)) {
-                    followSelected = (stack.selectedIDs.length === 1 && stack.selectedIDs[0][0] === 'n');
-                    context.enter(
-                        modeSelect(context, stack.selectedIDs).follow(followSelected)
-                    );
-                }
-                if (!followSelected && stack.transform) {
-                    map.transformEase(stack.transform);
-                }
+            .on('undone.map', function(stack, fromStack) {
+                didUndoOrRedo(stack, fromStack.transform);
+            })
+            .on('redone.map', function(stack) {
+                didUndoOrRedo(stack, stack.transform);
             });
 
         context.background()
@@ -207,7 +202,7 @@ export function rendererMap(context) {
                         }
                     }
                 });
-                var data = _values(selectedAndParents);
+                var data = Object.values(selectedAndParents);
                 var filter = function(d) { return d.id in selectedAndParents; };
 
                 data = context.features().filter(data, graph);
@@ -275,12 +270,14 @@ export function rendererMap(context) {
         var all = context.intersects(map.extent());
         var fullRedraw = false;
         var data;
+        var set;
         var filter;
 
         if (difference) {
             var complete = difference.complete(map.extent());
-            data = _compact(_values(complete));
-            filter = function(d) { return d.id in complete; };
+            data = Object.values(complete).filter(Boolean);
+            set = new Set(data.map(function(entity) { return entity.id; }));
+            filter = function(d) { return set.has(d.id); };
             features.clear(data);
 
         } else {
@@ -292,7 +289,7 @@ export function rendererMap(context) {
 
             if (extent) {
                 data = context.intersects(map.extent().intersection(extent));
-                var set = d3_set(_map(data, 'id'));
+                set = new Set(data.map(function(entity) { return entity.id; }));
                 filter = function(d) { return set.has(d.id); };
 
             } else {

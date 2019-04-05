@@ -1,13 +1,9 @@
-import _clone from 'lodash-es/clone';
-import _pull from 'lodash-es/pull';
-import _union from 'lodash-es/union';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { select as d3_select } from 'd3-selection';
 
 import { t } from '../../util/locale';
 import { uiField } from '../field';
-import { utilRebind } from '../../util';
+import { utilArrayUnion, utilRebind } from '../../util';
 
 
 export { uiFieldRadio as uiFieldStructureRadio };
@@ -19,7 +15,7 @@ export function uiFieldRadio(field, context) {
     var wrap = d3_select(null);
     var labels = d3_select(null);
     var radios = d3_select(null);
-    var radioData = _clone(field.options || field.keys);
+    var radioData = (field.options || field.keys).slice();  // shallow copy
     var typeField;
     var layerField;
     var _oldType = {};
@@ -101,7 +97,7 @@ export function uiFieldRadio(field, context) {
 
         list = list.enter()
             .append('ul')
-            .attr('class', 'labeled-inputs')
+            .attr('class', 'rows')
             .merge(list);
 
 
@@ -126,7 +122,7 @@ export function uiFieldRadio(field, context) {
         // Enter
         var typeEnter = typeItem.enter()
             .insert('li', ':first-child')
-            .attr('class', 'structure-type-item');
+            .attr('class', 'labeled-input structure-type-item');
 
         typeEnter
             .append('span')
@@ -155,10 +151,10 @@ export function uiFieldRadio(field, context) {
                     .on('change', changeLayer);
             }
             layerField.tags(tags);
-            field.keys = _union(field.keys, ['layer']);
+            field.keys = utilArrayUnion(field.keys, ['layer']);
         } else {
             layerField = null;
-            _pull(field.keys, 'layer');
+            field.keys = field.keys.filter(function(k) { return k !== 'layer'; });
         }
 
         var layerItem = list.selectAll('.structure-layer-item')
@@ -171,7 +167,7 @@ export function uiFieldRadio(field, context) {
         // Enter
         var layerEnter = layerItem.enter()
             .append('li')
-            .attr('class', 'structure-layer-item');
+            .attr('class', 'labeled-input structure-layer-item');
 
         layerEnter
             .append('span')

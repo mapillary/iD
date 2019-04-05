@@ -11,13 +11,15 @@
         "access"
     ],
     "moreFields": [
-        "toll",
-        "maxheight",
         "covered",
+        "incline",
+        "junction_line",
         "lit",
-        "smoothness",
+        "maxheight",
+        "maxweight_bridge",
         "minspeed",
-        "junction_line"
+        "smoothness",
+        "toll"
     ],
     "geometry": [
         "line"

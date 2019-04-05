@@ -1,6 +1,3 @@
-import _clone from 'lodash-es/clone';
-import _some from 'lodash-es/some';
-
 import {
   geoArea as d3_geoArea,
   geoMercatorRaw as d3_geoMercatorRaw
@@ -35,7 +32,7 @@ function vintageRange(vintage) {
 
 
 export function rendererBackgroundSource(data) {
-    var source = _clone(data);
+    var source = Object.assign({}, data);   // shallow copy
     var offset = [0, 0];
     var name = source.name;
     var description = source.description;
@@ -53,9 +50,9 @@ export function rendererBackgroundSource(data) {
     };
 
 
-    source.nudge = function(_, zoomlevel) {
-        offset[0] += _[0] / Math.pow(2, zoomlevel);
-        offset[1] += _[1] / Math.pow(2, zoomlevel);
+    source.nudge = function(val, zoomlevel) {
+        offset[0] += val[0] / Math.pow(2, zoomlevel);
+        offset[1] += val[1] / Math.pow(2, zoomlevel);
         return source;
     };
 
@@ -247,7 +244,7 @@ rendererBackgroundSource.Bing = function(data, dispatch) {
     bing.copyrightNotices = function(zoom, extent) {
         zoom = Math.min(zoom, 21);
         return providers.filter(function(provider) {
-            return _some(provider.areas, function(area) {
+            return provider.areas.some(function(area) {
                 return extent.intersects(area.extent) &&
                     area.zoom[0] <= zoom &&
                     area.zoom[1] >= zoom;

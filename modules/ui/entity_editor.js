@@ -1,20 +1,13 @@
-import _clone from 'lodash-es/clone';
-import _isEmpty from 'lodash-es/isEmpty';
-import _isEqual from 'lodash-es/isEqual';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
-
-import {
-    event as d3_event,
-    selectAll as d3_selectAll
-} from 'd3-selection';
+import {event as d3_event, selectAll as d3_selectAll } from 'd3-selection';
+import deepEqual from 'fast-deep-equal';
 
 import { t, textDirection } from '../util/locale';
 import { tooltip } from '../util/tooltip';
 import { actionChangeTags } from '../actions';
 import { modeBrowse } from '../modes';
 import { svgIcon } from '../svg';
-import { uiPresetFavorite } from './preset_favorite';
+import { uiPresetFavoriteButton } from './preset_favorite_button';
 import { uiPresetIcon } from './preset_icon';
 import { uiQuickLinks } from './quick_links';
 import { uiRawMemberEditor } from './raw_member_editor';
@@ -47,7 +40,7 @@ export function uiEntityEditor(context) {
 
     function entityEditor(selection) {
         var entity = context.entity(_entityID);
-        var tags = _clone(entity.tags);
+        var tags = Object.assign({}, entity.tags);  // shallow copy
 
         // Header
         var header = selection.selectAll('.header')
@@ -255,7 +248,8 @@ export function uiEntityEditor(context) {
 
             var match = context.presets().match(entity, graph);
             var activePreset = entityEditor.preset();
-            var weakPreset = activePreset && _isEmpty(activePreset.addTags);
+            var weakPreset = activePreset &&
+                Object.keys(activePreset.addTags || {}).length === 0;
 
             // A "weak" preset doesn't set any tags. (e.g. "Address")
             // Don't replace a weak preset with a fallback preset (e.g. "Point")
@@ -273,7 +267,7 @@ export function uiEntityEditor(context) {
     function changeTags(changed, onInput) {
         var entity = context.entity(_entityID);
         var annotation = t('operations.change_tags.annotation');
-        var tags = _clone(entity.tags);
+        var tags = Object.assign({}, entity.tags);   // shallow copy
 
         for (var k in changed) {
             if (!k) continue;
@@ -287,7 +281,7 @@ export function uiEntityEditor(context) {
             tags = utilCleanTags(tags);
         }
 
-        if (!_isEqual(entity.tags, tags)) {
+        if (!deepEqual(entity.tags, tags)) {
             if (_coalesceChanges) {
                 context.overwrite(actionChangeTags(_entityID, tags), annotation);
             } else {
@@ -341,7 +335,7 @@ export function uiEntityEditor(context) {
             _tagReference = uiTagReference(_activePreset.reference(context.geometry(_entityID)), context)
                 .showing(false);
         }
-        _presetFavorite = uiPresetFavorite(_activePreset, context.geometry(_entityID), context);
+        _presetFavorite = uiPresetFavoriteButton(_activePreset, context.geometry(_entityID), context);
         return entityEditor;
     };
 

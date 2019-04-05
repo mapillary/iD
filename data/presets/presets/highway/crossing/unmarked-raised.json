@@ -1,7 +1,6 @@
 {
     "fields": [
         "crossing",
-        "kerb",
         "tactile_paving"
     ],
     "geometry": [
@@ -31,5 +30,6 @@
         "speed",
         "slow"
     ],
+    "matchScore": 0.95,
     "name": "Unmarked Crossing (Raised)"
 }

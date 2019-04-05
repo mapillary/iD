@@ -1,12 +1,4 @@
 /* eslint-disable no-console */
-const requireESM = require('esm')(module);
-const _cloneDeep = requireESM('lodash-es/cloneDeep').default;
-const _forEach = requireESM('lodash-es/forEach').default;
-const _isEmpty = requireESM('lodash-es/isEmpty').default;
-const _merge = requireESM('lodash-es/merge').default;
-const _toPairs = requireESM('lodash-es/toPairs').default;
-const _filter = requireESM('lodash-es/filter').default;
-
 const colors = require('colors/safe');
 const fs = require('fs');
 const glob = require('glob');
@@ -18,7 +10,9 @@ const YAML = require('js-yaml');
 
 const fieldSchema = require('./data/presets/schema/field.json');
 const presetSchema = require('./data/presets/schema/preset.json');
-const suggestions = require('name-suggestion-index').names;
+const suggestionBrands = require('name-suggestion-index').brands.brands;
+const nameSuggestionsWikidata = require('name-suggestion-index').wikidata.wikidata;
+const deprecated = require('./data/deprecated.json').dataDeprecated;
 
 // fontawesome icons
 const fontawesome = require('@fortawesome/fontawesome-svg-core');
@@ -198,18 +192,18 @@ function generateFields(tstrings, faIcons) {
 
 function suggestionsToPresets(presets) {
 
-    for (var key in suggestions) {
-        for (var value in suggestions[key]) {
-            for (var name in suggestions[key][value]) {
-                addSuggestion(key, value, name);
-            }
-        }
-    }
+    Object.keys(suggestionBrands).forEach(k => {
+        const suggestion = suggestionBrands[k];
+        const qid = suggestion.tags['brand:wikidata'];
+        if (!qid || !/^Q\d+$/.test(qid)) return;   // wikidata tag missing or looks wrong..
 
+        const parts = k.split('|', 2);
+        const tag = parts[0].split('/', 2);
+        const key = tag[0];
+        const value = tag[1];
+        const name = parts[1].replace('~', ' ');
 
-    function addSuggestion(key, value, name) {
-        var suggestion = suggestions[key][value][name];
-        var presetID, preset;
+        let presetID, preset;
 
         // sometimes we can find a more specific preset then key/value..
         if (suggestion.tags.cuisine) {
@@ -236,21 +230,34 @@ function suggestionsToPresets(presets) {
             return;
         }
 
-        var wikidataTag = { 'brand:wikidata': suggestion.tags['brand:wikidata'] };
-        var suggestionID = presetID + '/' + name;
+        let wikidataTag = { 'brand:wikidata': qid };
+        let suggestionID = presetID + '/' + name;
+
+        let logoURL;
+
+        let logoURLs = nameSuggestionsWikidata[qid] && nameSuggestionsWikidata[qid].logos;
+        if (logoURLs) {
+            if (logoURLs.facebook) {
+                logoURL = logoURLs.facebook.replace('?type=square', '?type=large');
+            } else {
+                logoURL = logoURLs.twitter || logoURLs.wikidata;
+            }
+        }
 
         presets[suggestionID] = {
             name: name,
             icon: preset.icon,
+            imageURL: logoURL,
             geometry: preset.geometry,
-            tags: _merge({}, preset.tags, wikidataTag),
+            tags: Object.assign({}, preset.tags, wikidataTag),
             addTags: suggestion.tags,
             removeTags: suggestion.tags,
             reference: preset.reference,
+            countryCodes: suggestion.countryCodes,
             matchScore: 2,
             suggestion: true
         };
-    }
+    });
 
     return presets;
 }
@@ -285,34 +292,34 @@ function generatePresets(tstrings, faIcons) {
         }
     });
 
-    presets = _merge(presets, suggestionsToPresets(presets));
+    presets = Object.assign(presets, suggestionsToPresets(presets));
     return presets;
 }
 
 
 function generateTranslations(fields, presets, tstrings) {
-    var translations = _cloneDeep(tstrings);
+    var translations = JSON.parse(JSON.stringify(tstrings));  // deep clone
 
-    _forEach(translations.fields, function(field, id) {
+    Object.keys(translations.fields).forEach(function(id) {
+        var field = translations.fields[id];
         var f = fields[id];
+        var options = field.options || {};
+        var optkeys = Object.keys(options);
+
         if (f.keys) {
-            field['label#'] = _forEach(f.keys).map(function(key) { return key + '=*'; }).join(', ');
-            if (!_isEmpty(field.options)) {
-                _forEach(field.options, function(v,k) {
-                    if (id === 'access') {
-                        field.options[k]['title#'] = field.options[k]['description#'] = 'access=' + k;
-                    } else {
-                        field.options[k + '#'] = k + '=yes';
-                    }
-                });
-            }
+            field['label#'] = f.keys.map(function(k) { return k + '=*'; }).join(', ');
+            optkeys.forEach(function(k) {
+                if (id === 'access') {
+                    options[k]['title#'] = options[k]['description#'] = 'access=' + k;
+                } else {
+                    options[k + '#'] = k + '=yes';
+                }
+            });
         } else if (f.key) {
             field['label#'] = f.key + '=*';
-            if (!_isEmpty(field.options)) {
-                _forEach(field.options, function(v,k) {
-                    field.options[k + '#'] = f.key + '=' + k;
-                });
-            }
+            optkeys.forEach(function(k) {
+                options[k + '#'] = f.key + '=' + k;
+            });
         }
 
         if (f.placeholder) {
@@ -320,13 +327,19 @@ function generateTranslations(fields, presets, tstrings) {
         }
     });
 
-    _forEach(translations.presets, function(preset, id) {
+    Object.keys(translations.presets).forEach(function(id) {
+        var preset = translations.presets[id];
         var p = presets[id];
-        if (!_isEmpty(p.tags))
-            preset['name#'] = _toPairs(p.tags).map(function(pair) { return pair[0] + '=' + pair[1]; }).join(', ');
+        var tags = p.tags || {};
+        var keys = Object.keys(tags);
+
+        if (keys.length) {
+            preset['name#'] = keys.map(function(k) { return k + '=' + tags[k]; }).join(', ');
+        }
         if (p.searchable !== false) {
-            if (p.terms && p.terms.length)
+            if (p.terms && p.terms.length) {
                 preset['terms#'] = 'terms: ' + p.terms.join();
+            }
             preset.terms = '<translate with synonyms or related terms for \'' + preset.name + '\', separated by commas>';
         } else {
             delete preset.terms;
@@ -354,7 +367,8 @@ function generateTaginfo(presets, fields) {
         'tags': []
     };
 
-    _forEach(presets, function(preset) {
+    Object.keys(presets).forEach(function(id) {
+        var preset = presets[id];
         if (preset.suggestion) return;
 
         var keys = Object.keys(preset.tags);
@@ -392,7 +406,8 @@ function generateTaginfo(presets, fields) {
         coalesceTags(taginfo, tag);
     });
 
-    _forEach(fields, function(field) {
+    Object.keys(fields).forEach(function(id) {
+        var field = fields[id];
         var keys = field.keys || [ field.key ] || [];
         var isRadio = (field.type === 'radio' || field.type === 'structureRadio');
 
@@ -417,9 +432,34 @@ function generateTaginfo(presets, fields) {
         });
     });
 
-    _forEach(taginfo.tags, function(elem) {
-        if (elem.description)
+    deprecated.forEach(function(elem) {
+        var old = elem.old;
+        var oldKeys = Object.keys(old);
+        if (oldKeys.length === 1) {
+            var oldKey = oldKeys[0];
+            var tag = { key: oldKey };
+
+            var oldValue = old[oldKey];
+            if (oldValue !== '*') tag.value = oldValue;
+            var replacementStrings = [];
+            for (var replaceKey in elem.replace) {
+                var replaceValue = elem.replace[replaceKey];
+                if (replaceValue === '$1') replaceValue = '*';
+                replacementStrings.push(replaceKey + '=' + replaceValue);
+            }
+            var description = '🄳';
+            if (replacementStrings.length > 0) {
+                description += ' ➜ ' + replacementStrings.join(' + ');
+            }
+            tag.description = [description];
+            coalesceTags(taginfo, tag);
+        }
+    });
+
+    taginfo.tags.forEach(function(elem) {
+        if (elem.description) {
             elem.description = elem.description.join(', ');
+        }
     });
 
 
@@ -473,7 +513,8 @@ function generateTaginfo(presets, fields) {
 }
 
 function validateCategoryPresets(categories, presets) {
-    _forEach(categories, function(category) {
+    Object.keys(categories).forEach(function(id) {
+        var category = categories[id];
         if (category.members) {
             category.members.forEach(function(preset) {
                 if (presets[preset] === undefined) {
@@ -491,6 +532,20 @@ function validatePresetFields(presets, fields) {
     var maxFieldsBeforeWarning = 8;
     for (var presetID in presets) {
         var preset = presets[presetID];
+
+        if (preset.replacement) {
+            var replacementPreset = presets[preset.replacement];
+            var p1geometry = preset.geometry.slice().sort.toString();
+            var p2geometry = replacementPreset.geometry.slice().sort.toString();
+            if (replacementPreset === undefined) {
+                console.error('Unknown preset "' + preset.replacement + '" referenced as replacement of preset ' + preset.name);
+                process.exit(1);
+            } else if (p1geometry !== p2geometry) {
+                console.error('The preset "' + presetID + '" has different geometry than its replacement preset, "' + preset.replacement + '". They must match for tag upgrades to work.');
+                process.exit(1);
+            }
+        }
+
         // the keys for properties that contain arrays of field ids
         var fieldKeys = ['fields', 'moreFields'];
         for (var fieldsKeyIndex in fieldKeys) {
@@ -522,7 +577,7 @@ function validatePresetFields(presets, fields) {
             if (fieldCount > maxFieldsBeforeWarning) {
                 // Fields with `prerequisiteTag` probably won't show up initially,
                 // so don't count them against the limits.
-                var fieldsWithoutPrerequisites = _filter(preset.fields, function(fieldID) {
+                var fieldsWithoutPrerequisites = preset.fields.filter(function(fieldID) {
                     if (fields[fieldID] && fields[fieldID].prerequisiteTag) {
                         return false;
                     }
@@ -542,7 +597,8 @@ function validatePresetFields(presets, fields) {
 }
 
 function validateDefaults (defaults, categories, presets) {
-    _forEach(defaults.defaults, function (members, name) {
+    Object.keys(defaults.defaults).forEach(function(name) {
+        var members = defaults.defaults[name];
         members.forEach(function (id) {
             if (!presets[id] && !categories[id]) {
                 console.error('Unknown category or preset: ' + id + ' in default ' + name);
@@ -574,13 +630,13 @@ function writeEnJson(tstrings) {
         var core = YAML.load(data[0]);
         var imagery = YAML.load(data[1]);
         var community = YAML.load(data[2]);
-        var en = _merge(
-            core,
-            { en: { presets: tstrings } },
-            imagery,
-            { en: { community: community.en } }
-        );
-        return writeFileProm('dist/locales/en.json', JSON.stringify(en, null, 4));
+
+        var enjson = core;
+        enjson.en.presets = tstrings;
+        enjson.en.imagery = imagery.en.imagery;
+        enjson.en.community = community.en;
+
+        return writeFileProm('dist/locales/en.json', JSON.stringify(enjson, null, 4));
     });
 }
 

@@ -1,10 +1,5 @@
-import _assign from 'lodash-es/assign';
-import _difference from 'lodash-es/difference';
-import _includes from 'lodash-es/includes';
-import _without from 'lodash-es/without';
-
 import { debug } from '../index';
-import { utilGetPrototypeOf } from '../util';
+import { utilArrayDifference } from '../util';
 
 
 export function coreGraph(other, mutable) {
@@ -12,9 +7,9 @@ export function coreGraph(other, mutable) {
 
     if (other instanceof coreGraph) {
         var base = other.base();
-        this.entities = _assign(Object.create(base.entities), other.entities);
-        this._parentWays = _assign(Object.create(base.parentWays), other._parentWays);
-        this._parentRels = _assign(Object.create(base.parentRels), other._parentRels);
+        this.entities = Object.assign(Object.create(base.entities), other.entities);
+        this._parentWays = Object.assign(Object.create(base.parentWays), other._parentWays);
+        this._parentRels = Object.assign(Object.create(base.parentRels), other._parentRels);
 
     } else {
         this.entities = Object.create({});
@@ -68,38 +63,42 @@ coreGraph.prototype = {
     parentWays: function(entity) {
         var parents = this._parentWays[entity.id];
         var result = [];
-
         if (parents) {
-            for (var i = 0; i < parents.length; i++) {
-                result.push(this.entity(parents[i]));
-            }
+            parents.forEach(function(id) {
+                result.push(this.entity(id));
+            }, this);
         }
         return result;
     },
 
 
     isPoi: function(entity) {
-        var parentWays = this._parentWays[entity.id];
-        return !parentWays || parentWays.length === 0;
+        var parents = this._parentWays[entity.id];
+        return !parents || parents.size === 0;
     },
 
 
     isShared: function(entity) {
-        var parentWays = this._parentWays[entity.id];
-        return parentWays && parentWays.length > 1;
+        var parents = this._parentWays[entity.id];
+        return parents && parents.size > 1;
     },
 
 
     parentRelations: function(entity) {
         var parents = this._parentRels[entity.id];
         var result = [];
-
         if (parents) {
-            for (var i = 0; i < parents.length; i++) {
-                result.push(this.entity(parents[i]));
-            }
+            parents.forEach(function(id) {
+                result.push(this.entity(id));
+            }, this);
         }
         return result;
+    },
+
+    parentMultipolygons: function(entity) {
+        return this.parentRelations(entity).filter(function(relation) {
+            return relation.isMultipolygon();
+        });
     },
 
 
@@ -121,9 +120,9 @@ coreGraph.prototype = {
 
     base: function() {
         return {
-            'entities': utilGetPrototypeOf(this.entities),
-            'parentWays': utilGetPrototypeOf(this._parentWays),
-            'parentRels': utilGetPrototypeOf(this._parentRels)
+            'entities': Object.getPrototypeOf(this.entities),
+            'parentWays': Object.getPrototypeOf(this._parentWays),
+            'parentRels': Object.getPrototypeOf(this._parentRels)
         };
     },
 
@@ -168,33 +167,26 @@ coreGraph.prototype = {
 
     _updateRebased: function() {
         var base = this.base();
-        var i, k, child, id, keys;
 
-        keys = Object.keys(this._parentWays);
-        for (i = 0; i < keys.length; i++) {
-            child = keys[i];
+        Object.keys(this._parentWays).forEach(function(child) {
             if (base.parentWays[child]) {
-                for (k = 0; k < base.parentWays[child].length; k++) {
-                    id = base.parentWays[child][k];
-                    if (!this.entities.hasOwnProperty(id) && !_includes(this._parentWays[child], id)) {
-                        this._parentWays[child].push(id);
+                base.parentWays[child].forEach(function(id) {
+                    if (!this.entities.hasOwnProperty(id)) {
+                        this._parentWays[child].add(id);
                     }
-                }
+                }, this);
             }
-        }
+        }, this);
 
-        keys = Object.keys(this._parentRels);
-        for (i = 0; i < keys.length; i++) {
-            child = keys[i];
+        Object.keys(this._parentRels).forEach(function(child) {
             if (base.parentRels[child]) {
-                for (k = 0; k < base.parentRels[child].length; k++) {
-                    id = base.parentRels[child][k];
-                    if (!this.entities.hasOwnProperty(id) && !_includes(this._parentRels[child], id)) {
-                        this._parentRels[child].push(id);
+                base.parentRels[child].forEach(function(id) {
+                    if (!this.entities.hasOwnProperty(id)) {
+                        this._parentRels[child].add(id);
                     }
-                }
+                }, this);
             }
-        }
+        }, this);
 
         this.transients = {};
 
@@ -209,12 +201,12 @@ coreGraph.prototype = {
         parentRels = parentRels || this._parentRels;
 
         var type = entity && entity.type || oldentity && oldentity.type;
-        var removed, added, ways, rels, i;
+        var removed, added, i;
 
         if (type === 'way') {   // Update parentWays
             if (oldentity && entity) {
-                removed = _difference(oldentity.nodes, entity.nodes);
-                added = _difference(entity.nodes, oldentity.nodes);
+                removed = utilArrayDifference(oldentity.nodes, entity.nodes);
+                added = utilArrayDifference(entity.nodes, oldentity.nodes);
             } else if (oldentity) {
                 removed = oldentity.nodes;
                 added = [];
@@ -223,18 +215,20 @@ coreGraph.prototype = {
                 added = entity.nodes;
             }
             for (i = 0; i < removed.length; i++) {
-                parentWays[removed[i]] = _without(parentWays[removed[i]], oldentity.id);
+                // make a copy of prototype property, store as own property, and update..
+                parentWays[removed[i]] = new Set(parentWays[removed[i]]);
+                parentWays[removed[i]].delete(oldentity.id);
             }
             for (i = 0; i < added.length; i++) {
-                ways = _without(parentWays[added[i]], entity.id);
-                ways.push(entity.id);
-                parentWays[added[i]] = ways;
+                // make a copy of prototype property, store as own property, and update..
+                parentWays[added[i]] = new Set(parentWays[added[i]]);
+                parentWays[added[i]].add(entity.id);
             }
 
         } else if (type === 'relation') {   // Update parentRels
             if (oldentity && entity) {
-                removed = _difference(oldentity.members, entity.members);
-                added = _difference(entity.members, oldentity);
+                removed = utilArrayDifference(oldentity.members, entity.members);
+                added = utilArrayDifference(entity.members, oldentity.members);
             } else if (oldentity) {
                 removed = oldentity.members;
                 added = [];
@@ -243,12 +237,14 @@ coreGraph.prototype = {
                 added = entity.members;
             }
             for (i = 0; i < removed.length; i++) {
-                parentRels[removed[i].id] = _without(parentRels[removed[i].id], oldentity.id);
+                // make a copy of prototype property, store as own property, and update..
+                parentRels[removed[i].id] = new Set(parentRels[removed[i].id]);
+                parentRels[removed[i].id].delete(oldentity.id);
             }
             for (i = 0; i < added.length; i++) {
-                rels = _without(parentRels[added[i].id], entity.id);
-                rels.push(entity.id);
-                parentRels[added[i].id] = rels;
+                // make a copy of prototype property, store as own property, and update..
+                parentRels[added[i].id] = new Set(parentRels[added[i].id]);
+                parentRels[added[i].id].add(entity.id);
             }
         }
     },

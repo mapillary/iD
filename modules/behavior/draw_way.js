@@ -1,5 +1,3 @@
-import _clone from 'lodash-es/clone';
-
 import {
     event as d3_event,
     select as d3_select
@@ -125,13 +123,11 @@ export function behaviorDrawWay(context, wayID, index, mode, startGraph, baselin
 
         for (var i = 0; i < parents.length; i++) {
             var parent = parents[i];
-
-            var nodes = _clone(graph.childNodes(parent));
+            var nodes = graph.childNodes(parent).slice();  // shallow copy
 
             if (origWay.isClosed()) { // Check if Area
                 if (finishDraw) {
                     if (nodes.length < 3) return false;
-
                     nodes.splice(-2, 1);
                     entity = nodes[nodes.length-2];
                 } else {
@@ -351,7 +347,7 @@ export function behaviorDrawWay(context, wayID, index, mode, startGraph, baselin
             context.map().dblclickEnable(true);
         }, 1000);
 
-        var isNewFeature = !mode.isContinuing && context.presets().match(origWay, context.graph()).isFallback();
+        var isNewFeature = !mode.isContinuing;
         context.enter(modeSelect(context, [wayID]).newFeature(isNewFeature));
         if (isNewFeature) {
             context.validator().validate();

@@ -1,9 +1,4 @@
 /* global Mapillary:false */
-import _find from 'lodash-es/find';
-import _forEach from 'lodash-es/forEach';
-import _some from 'lodash-es/some';
-import _union from 'lodash-es/union';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { request as d3_request } from 'd3-request';
 import {
@@ -15,7 +10,7 @@ import rbush from 'rbush';
 
 import { geoExtent, geoScaleToZoom } from '../geo';
 import { svgDefs } from '../svg';
-import { utilQsString, utilRebind, utilTiler } from '../util';
+import { utilArrayUnion, utilQsString, utilRebind, utilTiler } from '../util';
 
 var CLIENT_ID = 'T0x1T2J4eTFfdm4zVjRhSVBMWTczUTo2Njg5MWViYWYxNjgwODI1';
 var REDIRECT_URI = 'http://localhost:8080';
@@ -156,22 +151,22 @@ function reset() {
 
     if (cache) {
         if (cache.images && cache.images.inflight) {
-            _forEach(cache.images.inflight, abortRequest);
+            Object.values(cache.images.inflight).forEach(abortRequest);
         }
         if (cache.image_detections && cache.image_detections.inflight) {
-            _forEach(cache.image_detections.inflight, abortRequest);
+            Object.values(cache.image_detections.inflight).forEach(abortRequest);
         }
         if (cache.map_features && cache.map_features.inflight) {
-            _forEach(cache.map_features.inflight, abortRequest);
+            Object.values(cache.map_features.inflight).forEach(abortRequest);
         }
         if (cache.sequences && cache.sequences.inflight) {
-            _forEach(cache.sequences.inflight, abortRequest);
+            Object.values(cache.sequences.inflight).forEach(abortRequest);
         }
         if (cache.map_point_features && cache.map_point_features.inflight) {
-            _forEach(cache.map_point_features.inflight, abortRequest);
+            Object.values(cache.map_point_features.inflight).forEach(abortRequest);
         }
         if (cache.point_features_image_detections && cache.point_features_image_detections.inflight) {
-            _forEach(cache.point_features_image_detections.inflight, abortRequest);
+            Object.values(cache.point_features_image_detections.inflight).forEach(abortRequest);
         }
     }
 
@@ -211,11 +206,10 @@ function loadTiles(which, url, projection) {
 
     // abort inflight requests that are no longer needed
     var cache = _mlyCache[which];
-    _forEach(cache.inflight, function(v, k) {
-        var wanted = _find(tiles, function(tile) { return k.indexOf(tile.id + ',') === 0; });
-
+    Object.keys(cache.inflight).forEach(function(k) {
+        var wanted = tiles.find(function(tile) { return k.indexOf(tile.id + ',') === 0; });
         if (!wanted) {
-            abortRequest(v);
+            abortRequest(cache.inflight[k]);
             delete cache.inflight[k];
         }
     });
@@ -683,6 +677,11 @@ export default {
         return _mlyFilters;
     },
 
+    cachedImage: function(imageKey) {
+        return _mlyCache.images.forImageKey[imageKey];
+    },
+
+
     sequences: function(projection) {
         var viewport = projection.clipExtent();
         var min = [viewport[0][0], viewport[1][1]];
@@ -942,7 +941,7 @@ export default {
         // if signs signs are shown, highlight the ones that appear in this image
         d3_selectAll('.layer-mapillary-signs .icon-sign, .layer-mapillary-points .icon-point')
             .classed('currentView', function(d) {
-                return _some(d.detections, function(detection) {
+                return d.detections.some(function(detection) {
                     return detection.image_key === imageKey;
                 });
             });
@@ -994,14 +993,14 @@ export default {
         var selectedImageKeys = (selectedLineString && selectedLineString.properties.coordinateProperties.image_keys) || [];
 
         // highlight sibling viewfields on either the selected or the hovered sequences
-        var highlightedImageKeys = _union(hoveredImageKeys, selectedImageKeys);
+        var highlightedImageKeys = utilArrayUnion(hoveredImageKeys, selectedImageKeys);
 
-        d3_selectAll('.layer-mapillary-images .viewfield-group')
+        d3_selectAll('.layer-mapillary .viewfield-group')
             .classed('highlighted', function(d) { return highlightedImageKeys.indexOf(d.key) !== -1; })
             .classed('hovered', function(d) { return d.key === hoveredImageKey; })
             .classed('currentView', function(d) { return d.key === selectedImageKey; });
 
-        d3_selectAll('.layer-mapillary-images .sequence')
+        d3_selectAll('.layer-mapillary .sequence')
             .classed('highlighted', function(d) { return d.properties.key === hoveredSequenceKey; })
             .classed('currentView', function(d) { return d.properties.key === selectedSequenceKey; });
 

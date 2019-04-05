@@ -3,12 +3,14 @@
         "crossing",
         "access",
         "surface",
-        "kerb",
         "tactile_paving"
     ],
     "geometry": [
         "line"
     ],
+    "tags": {
+        "footway": "crossing"
+    },
     "addTags": {
         "highway": "footway",
         "footway": "crossing",
@@ -19,14 +21,15 @@
         "footway": "crossing",
         "crossing": "unmarked"
     },
-    "tags": {
-        "highway": "footway",
-        "footway": "crossing"
-    },
     "reference": {
         "key": "footway",
         "value": "crossing"
     },
-    "terms": [],
+    "terms": [
+        "unmarked foot path crossing",
+        "unmarked crosswalk",
+        "unmarked pedestrian crossing"
+    ],
+    "matchScore": 0.95,
     "name": "Unmarked Crossing"
 }

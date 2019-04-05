@@ -36,7 +36,6 @@ export function svgOpenstreetcamImages(projection, context, dispatch) {
         var service = getService();
         if (!service) return;
 
-        service.loadViewer(context);
         editOn();
 
         layer
@@ -104,6 +103,8 @@ export function svgOpenstreetcamImages(projection, context, dispatch) {
     }
 
 
+    context.photos().on('change.openstreetcam_images', update);
+
     function update() {
         var viewer = d3_select('#photoviewer');
         var selected = viewer.empty() ? undefined : viewer.datum();
@@ -113,8 +114,13 @@ export function svgOpenstreetcamImages(projection, context, dispatch) {
         var showViewfields = (z >= minViewfieldZoom);
 
         var service = getService();
-        var sequences = (service ? service.sequences(projection) : []);
-        var images = (service && showMarkers ? service.images(projection) : []);
+        var sequences = [];
+        var images = [];
+
+        if (context.photos().showsFlat()) {
+            sequences = (service ? service.sequences(projection) : []);
+            images = (service && showMarkers ? service.images(projection) : []);
+        }
 
         var traces = layer.selectAll('.sequences').selectAll('.sequence')
             .data(sequences, function(d) { return d.properties.key; });
@@ -188,7 +194,7 @@ export function svgOpenstreetcamImages(projection, context, dispatch) {
         var enabled = svgOpenstreetcamImages.enabled,
             service = getService();
 
-        layer = selection.selectAll('.layer-openstreetcam-images')
+        layer = selection.selectAll('.layer-openstreetcam')
             .data(service ? [0] : []);
 
         layer.exit()
@@ -196,7 +202,7 @@ export function svgOpenstreetcamImages(projection, context, dispatch) {
 
         var layerEnter = layer.enter()
             .append('g')
-            .attr('class', 'layer-openstreetcam-images')
+            .attr('class', 'layer-openstreetcam')
             .style('display', enabled ? 'block' : 'none');
 
         layerEnter

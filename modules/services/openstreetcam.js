@@ -1,7 +1,3 @@
-import _find from 'lodash-es/find';
-import _forEach from 'lodash-es/forEach';
-import _union from 'lodash-es/union';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { request as d3_request } from 'd3-request';
 
@@ -20,13 +16,7 @@ import rbush from 'rbush';
 
 import { geoExtent, geoScaleToZoom } from '../geo';
 import { utilDetect } from '../util/detect';
-
-import {
-    utilQsString,
-    utilRebind,
-    utilSetTransform,
-    utilTiler
-} from '../util';
+import { utilArrayUnion, utilQsString, utilRebind, utilSetTransform, utilTiler } from '../util';
 
 
 var apibase = 'https://openstreetcam.org';
@@ -64,11 +54,10 @@ function loadTiles(which, url, projection) {
 
     // abort inflight requests that are no longer needed
     var cache = _oscCache[which];
-    _forEach(cache.inflight, function(v, k) {
-        var wanted = _find(tiles, function(tile) { return k.indexOf(tile.id + ',') === 0; });
-
+    Object.keys(cache.inflight).forEach(function(k) {
+        var wanted = tiles.find(function(tile) { return k.indexOf(tile.id + ',') === 0; });
         if (!wanted) {
-            abortRequest(v);
+            abortRequest(cache.inflight[k]);
             delete cache.inflight[k];
         }
     });
@@ -205,12 +194,8 @@ export default {
     },
 
     reset: function() {
-        var cache = _oscCache;
-
-        if (cache) {
-            if (cache.images && cache.images.inflight) {
-                _forEach(cache.images.inflight, abortRequest);
-            }
+        if (_oscCache) {
+            Object.values(_oscCache.images.inflight).forEach(abortRequest);
         }
 
         _oscCache = {
@@ -520,14 +505,14 @@ export default {
         var selectedImageKeys = (selectedSequence && selectedSequence.images.map(function (d) { return d.key; })) || [];
 
         // highlight sibling viewfields on either the selected or the hovered sequences
-        var highlightedImageKeys = _union(hoveredImageKeys, selectedImageKeys);
+        var highlightedImageKeys = utilArrayUnion(hoveredImageKeys, selectedImageKeys);
 
-        d3_selectAll('.layer-openstreetcam-images .viewfield-group')
+        d3_selectAll('.layer-openstreetcam .viewfield-group')
             .classed('highlighted', function(d) { return highlightedImageKeys.indexOf(d.key) !== -1; })
             .classed('hovered', function(d) { return d.key === hoveredImageKey; })
             .classed('currentView', function(d) { return d.key === selectedImageKey; });
 
-        d3_selectAll('.layer-openstreetcam-images .sequence')
+        d3_selectAll('.layer-openstreetcam .sequence')
             .classed('highlighted', function(d) { return d.properties.key === hoveredSequenceKey; })
             .classed('currentView', function(d) { return d.properties.key === selectedSequenceKey; });
 

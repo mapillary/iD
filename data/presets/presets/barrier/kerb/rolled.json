@@ -1,0 +1,22 @@
+{
+    "fields": [
+        "{barrier/kerb}",
+        "kerb/height"
+    ],
+    "geometry": [
+        "vertex",
+        "line"
+    ],
+    "tags": {
+        "barrier": "kerb",
+        "kerb": "rolled"
+    },
+    "reference": {
+        "key": "kerb",
+        "value": "rolled"
+    },
+    "terms": [
+        "gutter"
+    ],
+    "name": "Rolled Curb"
+}

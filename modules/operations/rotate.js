@@ -1,6 +1,3 @@
-import _some from 'lodash-es/some';
-import _uniqBy from 'lodash-es/uniqBy';
-
 import { t } from '../util/locale';
 import { behaviorOperation } from '../behavior';
 import { geoExtent } from '../geo';
@@ -9,10 +6,10 @@ import { utilGetAllNodes } from '../util';
 
 
 export function operationRotate(selectedIDs, context) {
-    var multi = (selectedIDs.length === 1 ? 'single' : 'multiple'),
-        extent = selectedIDs.reduce(function(extent, id) {
-            return extent.extend(context.entity(id).extent(context.graph()));
-        }, geoExtent());
+    var multi = (selectedIDs.length === 1 ? 'single' : 'multiple');
+    var extent = selectedIDs.reduce(function(extent, id) {
+        return extent.extend(context.entity(id).extent(context.graph()));
+    }, geoExtent());
 
 
     var operation = function() {
@@ -22,7 +19,11 @@ export function operationRotate(selectedIDs, context) {
 
     operation.available = function() {
         var nodes = utilGetAllNodes(selectedIDs, context.graph());
-        return _uniqBy(nodes, function(n) { return n.loc; }).length >= 2;
+        var uniqeLocs = nodes.reduce(function(acc, node) {
+            return acc.add(node.loc);
+        }, new Set());
+
+        return uniqeLocs.size >= 2;
     };
 
 
@@ -30,9 +31,9 @@ export function operationRotate(selectedIDs, context) {
         var reason;
         if (extent.area() && extent.percentContainedIn(context.extent()) < 0.8) {
             reason = 'too_large';
-        } else if (_some(selectedIDs, context.hasHiddenConnections)) {
+        } else if (selectedIDs.some(context.hasHiddenConnections)) {
             reason = 'connected_to_hidden';
-        } else if (_some(selectedIDs, incompleteRelation)) {
+        } else if (selectedIDs.some(incompleteRelation)) {
             reason = 'incomplete_relation';
         }
         return reason;

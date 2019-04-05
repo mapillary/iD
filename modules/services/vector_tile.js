@@ -1,11 +1,7 @@
-import _clone from 'lodash-es/clone';
-import _find from 'lodash-es/find';
-import _isEqual from 'lodash-es/isEqual';
-import _forEach from 'lodash-es/forEach';
-
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { request as d3_request } from 'd3-request';
 
+import deepEqual from 'fast-deep-equal';
 import turf_bboxClip from '@turf/bbox-clip';
 import stringify from 'fast-json-stable-stringify';
 import martinez from 'martinez-polygon-clipping';
@@ -49,7 +45,7 @@ function vtToGeoJSON(data, tile, mergeCache) {
                 if (geometry.type === 'MultiPolygon') {
                     var isClipped = false;
                     var featureClip = turf_bboxClip(feature, tile.extent.rectangle());
-                    if (!_isEqual(feature.geometry, featureClip.geometry)) {
+                    if (!deepEqual(feature.geometry, featureClip.geometry)) {
                         // feature = featureClip;
                         isClipped = true;
                     }
@@ -142,7 +138,7 @@ export default {
         for (var sourceID in _vtCache) {
             var source = _vtCache[sourceID];
             if (source && source.inflight) {
-                _forEach(source.inflight, abortRequest);
+                Object.values(source.inflight).forEach(abortRequest);
             }
         }
 
@@ -174,9 +170,9 @@ export default {
                 if (seen[hash]) continue;
                 seen[hash] = true;
 
-                // return a shallow clone, because the hash may change
+                // return a shallow copy, because the hash may change
                 // later if this feature gets merged with another
-                results.push(_clone(feature));
+                results.push(Object.assign({}, feature));  // shallow copy
             }
         }
 
@@ -193,11 +189,10 @@ export default {
         var tiles = tiler.getTiles(projection);
 
         // abort inflight requests that are no longer needed
-        _forEach(source.inflight, function(v, k) {
-            var wanted = _find(tiles, function(tile) { return k === tile.id; });
-
+        Object.keys(source.inflight).forEach(function(k) {
+            var wanted = tiles.find(function(tile) { return k === tile.id; });
             if (!wanted) {
-                abortRequest(v);
+                abortRequest(source.inflight[k]);
                 delete source.inflight[k];
             }
         });

@@ -1,11 +1,8 @@
 import _debounce from 'lodash-es/debounce';
-import _extend from 'lodash-es/extend';
-import _forEach from 'lodash-es/forEach';
-import _omit from 'lodash-es/omit';
 
 import { json as d3_json } from 'd3-request';
 
-import { utilQsString } from '../util';
+import { utilObjectOmit, utilQsString } from '../util';
 import { currentLocale } from '../util/locale';
 
 
@@ -66,7 +63,7 @@ function setSortMembers(params) {
 
 
 function clean(params) {
-    return _omit(params, ['geometry', 'debounce']);
+    return utilObjectOmit(params, ['geometry', 'debounce']);
 }
 
 
@@ -210,7 +207,7 @@ export default {
 
 
     reset: function() {
-        _forEach(_inflight, function(req) { req.abort(); });
+        Object.values(_inflight).forEach(function(request) { request.abort(); });
         _inflight = {};
     },
 
@@ -218,7 +215,7 @@ export default {
     keys: function(params, callback) {
         var doRequest = params.debounce ? debouncedRequest : request;
         params = clean(setSort(params));
-        params = _extend({
+        params = Object.assign({
             rp: 10,
             sortname: 'count_all',
             sortorder: 'desc',
@@ -243,7 +240,7 @@ export default {
     multikeys: function(params, callback) {
         var doRequest = params.debounce ? debouncedRequest : request;
         params = clean(setSort(params));
-        params = _extend({
+        params = Object.assign({
             rp: 25,
             sortname: 'count_all',
             sortorder: 'desc',
@@ -276,7 +273,7 @@ export default {
 
         var doRequest = params.debounce ? debouncedRequest : request;
         params = clean(setSort(setFilter(params)));
-        params = _extend({
+        params = Object.assign({
             rp: 25,
             sortname: 'count_all',
             sortorder: 'desc',
@@ -309,7 +306,7 @@ export default {
         var doRequest = params.debounce ? debouncedRequest : request;
         var geometry = params.geometry;
         params = clean(setSortMembers(params));
-        params = _extend({
+        params = Object.assign({
             rp: 25,
             sortname: 'count_all_members',
             sortorder: 'desc',

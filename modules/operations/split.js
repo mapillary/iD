@@ -1,7 +1,3 @@
-import _filter from 'lodash-es/filter';
-import _some from 'lodash-es/some';
-import _without from 'lodash-es/without';
-
 import { t } from '../util/locale';
 import { actionSplit } from '../actions/index';
 import { behaviorOperation } from '../behavior/index';
@@ -9,17 +5,18 @@ import { modeSelect } from '../modes/index';
 
 
 export function operationSplit(selectedIDs, context) {
-    var vertices = _filter(selectedIDs, function(entityId) {
-        return context.geometry(entityId) === 'vertex';
+    var vertices = selectedIDs.filter(function(id) {
+        return context.geometry(id) === 'vertex';
     });
 
-    var entityId = vertices[0],
-        action = actionSplit(entityId),
-        ways = [];
+    var entityID = vertices[0];
+    var action = actionSplit(entityID);
+    var ways = [];
 
     if (vertices.length === 1) {
-        if (selectedIDs.length > 1) {
-            action.limitWays(_without(selectedIDs, entityId));
+        if (entityID && selectedIDs.length > 1) {
+            var ids = selectedIDs.filter(function(id) { return id !== entityID; });
+            action.limitWays(ids);
         }
         ways = action.ways(context.graph());
     }
@@ -38,7 +35,7 @@ export function operationSplit(selectedIDs, context) {
 
     operation.disabled = function() {
         var reason;
-        if (_some(selectedIDs, context.hasHiddenConnections)) {
+        if (selectedIDs.some(context.hasHiddenConnections)) {
             reason = 'connected_to_hidden';
         }
         return action.disabled(context.graph()) || reason;

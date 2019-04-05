@@ -10,32 +10,42 @@
             "open_wikidata": "open on wikidata.org",
             "favorite": "favorite"
         },
+        "toolbar": {
+            "inspect": "Inspect",
+            "undo_redo": "Undo / Redo",
+            "recent": "Recent",
+            "favorites": "Favorites",
+            "add_feature": "Add Feature"
+        },
         "modes": {
             "add_feature": {
                 "title": "Add a feature",
                 "description": "Search for features to add to the map.",
-                "key": "Tab"
+                "key": "Tab",
+                "result": "{count} result",
+                "results": "{count} results"
             },
             "add_area": {
                 "title": "Area",
                 "description": "Add parks, buildings, lakes or other areas to the map.",
-                "tail": "Click on the map to start drawing an area, like a park, lake, or building."
+                "tail": "Click on the map to start drawing an area, like a park, lake, or building.",
+                "filter_tooltip": "areas"
             },
             "add_line": {
                 "title": "Line",
                 "description": "Add highways, streets, pedestrian paths, canals or other lines to the map.",
-                "tail": "Click on the map to start drawing a road, path, or route."
+                "tail": "Click on the map to start drawing a road, path, or route.",
+                "filter_tooltip": "lines"
             },
             "add_point": {
                 "title": "Point",
                 "description": "Add restaurants, monuments, postal boxes or other points to the map.",
-                "tail": "Click on the map to add a point."
-            },
-            "add_vertex": {
-                "title": "Vertex"
+                "tail": "Click on the map to add a point.",
+                "filter_tooltip": "points"
             },
             "add_note": {
                 "title": "Note",
+                "label": "Add Note",
                 "description": "Spotted an issue? Let other mappers know.",
                 "tail": "Click on the map to add a note.",
                 "key": "N"
@@ -53,9 +63,6 @@
                 },
                 "building": {
                     "title": "Add {feature} as a building"
-                },
-                "vertex": {
-                    "title": "Add {feature} as a vertex"
                 }
             },
             "browse": {
@@ -178,6 +185,33 @@
                 "connected_to_hidden": {
                     "single": "This feature can't be deleted because it is connected to a hidden feature.",
                     "multiple": "These features can't be deleted because some are connected to hidden features."
+                },
+                "has_wikidata_tag": {
+                    "single": "This feature can't be deleted because it has a Wikidata tag.",
+                    "multiple": "These features can't be deleted because some have Wikidata tags."
+                }
+            },
+            "downgrade": {
+                "title": "Downgrade",
+                "description": {
+                    "building_address": "Remove all non-address and non-building tags.",
+                    "building": "Remove all non-building tags.",
+                    "address": "Remove all non-address tags."
+                },
+                "annotation": {
+                    "building": {
+                        "single": "Downgraded a feature to a basic building.",
+                        "multiple": "Downgraded {n} features to basic buildings."
+                    },
+                    "address": {
+                        "single": "Downgraded a feature to an address.",
+                        "multiple": "Downgraded {n} features to addresses."
+                    },
+                    "multiple": "Downgraded {n} features."
+                },
+                "has_wikidata_tag": {
+                    "single": "This feature can't be downgraded because it has a Wikidata tag.",
+                    "multiple": "These features can't be downgraded because some have Wikidata tags."
                 }
             },
             "add_member": {
@@ -185,6 +219,9 @@
             },
             "delete_member": {
                 "annotation": "Removed a member from a relation."
+            },
+            "reorder_members": {
+                "annotation": "Reordered a relation's members."
             },
             "connect": {
                 "annotation": {
@@ -603,6 +640,7 @@
             "overlays": "Overlays",
             "imagery_source_faq": "Imagery Info / Report a Problem",
             "reset": "reset",
+            "reset_all": "Reset All",
             "display_options": "Display Options",
             "brightness": "Brightness",
             "contrast": "Contrast",
@@ -648,6 +686,22 @@
             "map_features": "Map Features",
             "autohidden": "These features have been automatically hidden because too many would be shown on the screen.  You can zoom in to edit them.",
             "osmhidden": "These features have been automatically hidden because the OpenStreetMap layer is hidden."
+        },
+        "photo_overlays": {
+            "title": "Photo Overlays",
+            "traffic_signs": {
+                "title": "Traffic Signs"
+            },
+            "photo_type": {
+                "flat": {
+                    "title": "Flat Photos",
+                    "tooltip": "Traditional photos"
+                },
+                "panoramic": {
+                    "title": "Panoramic Photos",
+                    "tooltip": "360° photos"
+                }
+            }
         },
         "feature": {
             "points": {
@@ -1174,31 +1228,30 @@
         },
         "streetside": {
             "tooltip": "Streetside photos from Microsoft",
-            "title": "Photo Overlay (Bing Streetside)",
+            "title": "Bing Streetside",
             "report": "Report a privacy concern with this image",
             "view_on_bing": "View on Bing Maps",
             "hires": "High resolution"
         },
         "mapillary_images": {
-            "tooltip": "Street-level photos from Mapillary",
-            "title": "Photo Overlay (Mapillary)"
-        },
-        "mapillary_signs": {
-            "tooltip": "Traffic signs from Mapillary (must enable Photo Overlay)",
-            "title": "Traffic Sign Overlay (Mapillary)"
+            "tooltip": "Street-level photos from Mapillary"
         },
         "mapillary_points": {
             "tooltip": "Point features from Mapillary (must enable Photo Overlay)",
             "title": "Point Features Overlay (Mapillary)"
         },
         "mapillary": {
+            "title": "Mapillary",
+            "signs": {
+                "tooltip": "Traffic signs from Mapillary"
+            },
             "view_on_mapillary": "View this image on Mapillary"
         },
         "openstreetcam_images": {
-            "tooltip": "Street-level photos from OpenStreetCam",
-            "title": "Photo Overlay (OpenStreetCam)"
+            "tooltip": "Street-level photos from OpenStreetCam"
         },
         "openstreetcam": {
+            "title": "OpenStreetCam",
             "view_on_openstreetcam": "View this image on OpenStreetCam"
         },
         "note": {
@@ -1527,16 +1580,6 @@
                     "tip": "Crossing indoor features should be connected or use different levels."
                 }
             },
-            "deprecated_tag": {
-                "title": "Deprecated Tags",
-                "single": {
-                    "message": "{feature} has the outdated tag \"{tag}\""
-                },
-                "combination": {
-                    "message": "{feature} has an outdated tag combination: {tags}"
-                },
-                "tip": "Some tags become deprecated over time and should be replaced."
-            },
             "disconnected_way": {
                 "title": "Disconnected Ways",
                 "highway": {
@@ -1548,6 +1591,16 @@
                 "title": "Generic Names",
                 "message": "{feature} has the generic name \"{name}\"",
                 "tip": "Names should be the actual, on-the-ground names of features."
+            },
+            "incompatible_source": {
+                "title": "Incompatible Data Sources",
+                "google": {
+                    "feature": {
+                        "message": "{feature} lists Google as a data source"
+                    },
+                    "tip": "Google products are proprietary and must not be used as references."
+                },
+                "tip": "Source data must be licensed in a manner compatible with OpenStreetMap."
             },
             "many_deletions": {
                 "title": "Many Deletions",
@@ -1584,10 +1637,27 @@
                 "message": "{multipolygon} has misplaced tags",
                 "tip": "Multipolygons should be tagged on their relation, not their outer way."
             },
+            "outdated_tags": {
+                "title": "Outdated Tags",
+                "message": "{feature} has outdated tags",
+                "tip": "Some tags change over time and should be updated."
+            },
+            "private_data": {
+                "title": "Private Information",
+                "contact": {
+                    "message": "{feature} might be tagged with private contact information"
+                },
+                "tip": "Sensitive data like personal phone numbers should not be tagged."
+            },
             "tag_suggests_area": {
                 "title": "Lines Tagged as Areas",
                 "message": "{feature} should be a closed area based on the tag \"{tag}\"",
                 "tip": "Areas must have connected endpoints."
+            },
+            "unknown_road": {
+                "title": "Unknown Roads",
+                "message": "{feature} has no classification",
+                "tip": "Roads without a specific type may not appear in maps or routing."
             },
             "fix": {
                 "connect_almost_junction": {
@@ -1616,18 +1686,18 @@
                     "title": "Move the tags",
                     "annotation": "Moved tags."
                 },
-                "remove_deprecated_tag": {
-                    "annotation": "Removed an old tag."
-                },
-                "remove_deprecated_tag_combo": {
-                    "annotation": "Removed an old tag combination."
-                },
                 "remove_from_relation": {
                     "title": "Remove from relation"
                 },
                 "remove_generic_name": {
                     "title": "Remove the name",
                     "annotation": "Removed a generic name."
+                },
+                "remove_private_info": {
+                    "annotation": "Removed private information."
+                },
+                "remove_proprietary_data": {
+                    "title": "Remove any proprietary data"
                 },
                 "remove_tag": {
                     "title": "Remove the tag",
@@ -1642,6 +1712,9 @@
                 "select_preset": {
                     "title": "Select a feature type"
                 },
+                "select_road_type": {
+                    "title": "Select a road type"
+                },
                 "set_as_inner": {
                     "title": "Set as inner"
                 },
@@ -1652,13 +1725,15 @@
                     "title": "Tag as disconnected",
                     "annotation": "Tagged very close features as disconnected."
                 },
-                "upgrade_tag": {
-                    "title": "Upgrade the tag",
-                    "annotation": "Upgraded an old tag."
+                "tag_this_as_higher": {
+                    "title": "Tag this as higher"
                 },
-                "upgrade_tag_combo": {
+                "tag_this_as_lower": {
+                    "title": "Tag this as lower"
+                },
+                "upgrade_tags": {
                     "title": "Upgrade the tags",
-                    "annotation": "Upgraded an old tag combination."
+                    "annotation": "Upgraded old tags."
                 },
                 "use_bridge_or_tunnel": {
                     "title": "Use a bridge or tunnel"
@@ -2255,6 +2330,9 @@
                 "agrarian": {
                     "label": "Products"
                 },
+                "air_conditioning": {
+                    "label": "Air Conditioning"
+                },
                 "amenity": {
                     "label": "Type"
                 },
@@ -2625,6 +2703,12 @@
                         "no": "Not Allowed"
                     }
                 },
+                "door_type": {
+                    "label": "Type"
+                },
+                "door": {
+                    "label": "Door"
+                },
                 "drive_through": {
                     "label": "Drive-Through"
                 },
@@ -2705,6 +2789,12 @@
                 "flag/type": {
                     "label": "Flag Type"
                 },
+                "floating": {
+                    "label": "Floating"
+                },
+                "flood_prone": {
+                    "label": "Flood Prone"
+                },
                 "ford": {
                     "label": "Type",
                     "placeholder": "Default"
@@ -2774,6 +2864,9 @@
                 },
                 "height": {
                     "label": "Height (Meters)"
+                },
+                "highspeed": {
+                    "label": "High-Speed"
                 },
                 "highway": {
                     "label": "Type"
@@ -2846,6 +2939,9 @@
                 "incline": {
                     "label": "Incline"
                 },
+                "indoor_type": {
+                    "label": "Type"
+                },
                 "indoor": {
                     "label": "Indoor"
                 },
@@ -2896,6 +2992,9 @@
                 },
                 "kerb": {
                     "label": "Curb"
+                },
+                "kerb/height": {
+                    "label": "Height"
                 },
                 "label": {
                     "label": "Label"
@@ -3010,11 +3109,17 @@
                 "maxstay": {
                     "label": "Max Stay"
                 },
+                "maxweight_bridge": {
+                    "label": "Max Weight"
+                },
                 "maxweight": {
                     "label": "Max Weight"
                 },
                 "memorial": {
                     "label": "Type"
+                },
+                "microbrewery": {
+                    "label": "Microbrewery"
                 },
                 "minspeed": {
                     "label": "Minimum Speed Limit",
@@ -3353,6 +3458,9 @@
                 "ref_road_number": {
                     "label": "Road Number"
                 },
+                "ref_room_number": {
+                    "label": "Room Number"
+                },
                 "ref_route": {
                     "label": "Route Number"
                 },
@@ -3379,6 +3487,9 @@
                 "religion": {
                     "label": "Religion"
                 },
+                "resource": {
+                    "label": "Resources"
+                },
                 "restriction": {
                     "label": "Type"
                 },
@@ -3387,6 +3498,9 @@
                 },
                 "roof/colour": {
                     "label": "Roof Color"
+                },
+                "room": {
+                    "label": "Type"
                 },
                 "rooms": {
                     "label": "Rooms"
@@ -3949,6 +4063,10 @@
                     "name": "Highway",
                     "terms": ""
                 },
+                "indoor": {
+                    "name": "Indoor Feature",
+                    "terms": ""
+                },
                 "landuse": {
                     "name": "Land Use",
                     "terms": ""
@@ -4501,6 +4619,10 @@
                     "name": "LGBTQ+ Pub",
                     "terms": "gay pub,lesbian pub,lgbtq pub,lgbt pub,lgb pub"
                 },
+                "amenity/pub/microbrewery": {
+                    "name": "Brewpub",
+                    "terms": "alcohol,drink,dive,beer,bier,booze,craft brewery,microbrewery,small batch brewery"
+                },
                 "amenity/public_bath": {
                     "name": "Public Bath",
                     "terms": "onsen,foot bath,hot springs"
@@ -4633,6 +4755,10 @@
                     "name": "Smoking Area",
                     "terms": ""
                 },
+                "amenity/social_centre": {
+                    "name": "Social Center",
+                    "terms": "event,fraternal,fraternity,hall,organization,professional,society,sorority,union,vetern"
+                },
                 "amenity/social_facility": {
                     "name": "Social Facility",
                     "terms": ""
@@ -4680,6 +4806,10 @@
                 "amenity/townhall": {
                     "name": "Town Hall",
                     "terms": "village,city,government,courthouse,municipal"
+                },
+                "amenity/toy_library": {
+                    "name": "Toy Library",
+                    "terms": "game,toy"
                 },
                 "amenity/university": {
                     "name": "University Grounds",
@@ -4799,7 +4929,7 @@
                 },
                 "area": {
                     "name": "Area",
-                    "terms": ""
+                    "terms": "polygon"
                 },
                 "area/highway": {
                     "name": "Road Surface",
@@ -4933,6 +5063,14 @@
                     "name": "Lowered Curb",
                     "terms": "curb cut,curb ramp,kerb ramp,dropped kerb,pram ramp"
                 },
+                "barrier/kerb/raised": {
+                    "name": "Raised Curb",
+                    "terms": ""
+                },
+                "barrier/kerb/rolled": {
+                    "name": "Rolled Curb",
+                    "terms": "gutter"
+                },
                 "barrier/kissing_gate": {
                     "name": "Kissing Gate",
                     "terms": ""
@@ -4968,6 +5106,10 @@
                 "bridge/support/pier": {
                     "name": "Bridge Pier",
                     "terms": ""
+                },
+                "building_part": {
+                    "name": "Building Part",
+                    "terms": "roof,simple 3D buildings"
                 },
                 "building": {
                     "name": "Building",
@@ -5566,7 +5708,7 @@
                     "terms": "speech,therapist,therapy,voice"
                 },
                 "highway/bus_stop": {
-                    "name": "Bus Stop / Platform",
+                    "name": "Bus Stop",
                     "terms": ""
                 },
                 "highway/bridleway": {
@@ -5611,7 +5753,19 @@
                 },
                 "highway/cycleway": {
                     "name": "Cycle Path",
-                    "terms": "bike"
+                    "terms": "bike path,bicyle path"
+                },
+                "highway/cycleway/bicycle_foot": {
+                    "name": "Cycle & Foot Path",
+                    "terms": "bicycle and foot path,mixed-use trail,multi-use trail,segregated trail"
+                },
+                "highway/cycleway/crossing/marked": {
+                    "name": "Marked Cycle Crossing",
+                    "terms": "cycle crosswalk,cycle path crossing,cycleway crossing,bicycle crossing,bike crossing"
+                },
+                "highway/cycleway/crossing/unmarked": {
+                    "name": "Unmarked Cycle Crossing",
+                    "terms": "cycle path crossing,cycleway crossing,bicycle crossing,bike crossing"
                 },
                 "highway/elevator": {
                     "name": "Elevator",
@@ -5639,7 +5793,7 @@
                 },
                 "highway/footway/marked": {
                     "name": "Marked Crosswalk",
-                    "terms": "zebra crossing,marked crossing,crosswalk"
+                    "terms": "marked foot path crossing,marked crossing,marked pedestrian crosswalk,zebra crossing"
                 },
                 "highway/footway/sidewalk": {
                     "name": "Sidewalk",
@@ -5651,7 +5805,7 @@
                 },
                 "highway/footway/unmarked": {
                     "name": "Unmarked Crossing",
-                    "terms": ""
+                    "terms": "unmarked foot path crossing,unmarked crosswalk,unmarked pedestrian crossing"
                 },
                 "highway/give_way": {
                     "name": "Yield Sign",
@@ -5663,7 +5817,7 @@
                 },
                 "highway/milestone": {
                     "name": "Highway Milestone",
-                    "terms": "milestone,marker"
+                    "terms": "mile marker,mile post,mile stone,mileage marker,milemarker,milepost"
                 },
                 "highway/mini_roundabout": {
                     "name": "Mini-Roundabout",
@@ -5837,6 +5991,10 @@
                     "name": "Memorial",
                     "terms": "dedicatory,epitaph,remember,remembrance,memory,monument,stolperstein"
                 },
+                "historic/memorial/plaque": {
+                    "name": "Commemorative Plaque",
+                    "terms": "dedicatory,epitaph,historical marker,remember,remembrance,memory"
+                },
                 "historic/monument": {
                     "name": "Monument",
                     "terms": ""
@@ -5860,6 +6018,30 @@
                 "historic/wreck": {
                     "name": "Shipwreck",
                     "terms": "hull,mast,maritime,remains,ship,boat"
+                },
+                "indoor/corridor_line": {
+                    "name": "Indoor Corridor",
+                    "terms": ""
+                },
+                "indoor/area": {
+                    "name": "Indoor Area",
+                    "terms": "indoor space"
+                },
+                "indoor/corridor": {
+                    "name": "Indoor Corridor",
+                    "terms": "concourse,foyer,hallway,passageway"
+                },
+                "indoor/door": {
+                    "name": "Indoor Door",
+                    "terms": "doorframe,doorway,portal,room access,threshold"
+                },
+                "indoor/room": {
+                    "name": "Room",
+                    "terms": "antechamber,anteroom,atrium,cell,chamber,concourse,foyer,indoor room,lobby,vestibule"
+                },
+                "indoor/wall": {
+                    "name": "Indoor Wall",
+                    "terms": "indoor barrier,room divider,room partition"
                 },
                 "internet_access/wlan": {
                     "name": "Wi-Fi Hotspot",
@@ -6341,13 +6523,17 @@
                     "name": "Racetrack (Non-Motorsport)",
                     "terms": "cycle,dog,greyhound,horse,race*,track"
                 },
+                "leisure/track/cycling": {
+                    "name": "Cycling Track",
+                    "terms": "bicycle track,bicycling track,cycle racetrack,velodrome"
+                },
                 "leisure/track/horse_racing": {
-                    "name": "Racetrack (Horse Racing)",
-                    "terms": "race*,horse,track"
+                    "name": "Horse Racing Track",
+                    "terms": "equestrian race track,horse race betting,horseracing,horsetrack,horse racetrack"
                 },
                 "leisure/track/running": {
-                    "name": "Racetrack (Running)",
-                    "terms": "race*,running,sprint,track"
+                    "name": "Running Track",
+                    "terms": "athletics track,decathlon,foot race,long distance running,marathon,middle distance running,racetrack,running,sprint,track,walking"
                 },
                 "leisure/water_park": {
                     "name": "Water Park",
@@ -6355,11 +6541,11 @@
                 },
                 "line": {
                     "name": "Line",
-                    "terms": ""
+                    "terms": "polyline"
                 },
                 "man_made/adit": {
                     "name": "Adit",
-                    "terms": "entrance,underground,mine,cave"
+                    "terms": "cave,horizontal mine entrance,tunnel,underground"
                 },
                 "man_made/antenna": {
                     "name": "Antenna",
@@ -6433,6 +6619,10 @@
                     "name": "Television Broadcast Mast",
                     "terms": "antenna,broadcast tower,communication mast,communication tower,guyed tower,television mast,television tower,transmission mast,transmission tower,tv mast,tv tower"
                 },
+                "man_made/mineshaft": {
+                    "name": "Mineshaft",
+                    "terms": "cave,mine shaft,tunnel,underground,vertical mine entrance"
+                },
                 "man_made/monitoring_station": {
                     "name": "Monitoring Station",
                     "terms": "weather,earthquake,seismology,air,gps"
@@ -6447,10 +6637,18 @@
                 },
                 "man_made/pier": {
                     "name": "Pier",
-                    "terms": "dock,jetty"
+                    "terms": "berth,dock,jetty,landing,promenade,wharf"
+                },
+                "man_made/pier/floating": {
+                    "name": "Floating Pier",
+                    "terms": "berth,dock,jetty,landing,promenade,wharf"
                 },
                 "man_made/pipeline": {
                     "name": "Pipeline",
+                    "terms": "oil,natural gas,water,sewer,sewage"
+                },
+                "man_made/pipeline/underground": {
+                    "name": "Underground Pipeline",
                     "terms": "oil,natural gas,water,sewer,sewage"
                 },
                 "man_made/pumping_station": {
@@ -6620,6 +6818,10 @@
                 "natural/tree": {
                     "name": "Tree",
                     "terms": ""
+                },
+                "natural/valley": {
+                    "name": "Valley",
+                    "terms": "canyon,dale,dell,dene,depression,glen,gorge,gully,gulley,gultch,hollow,ravine,rift,vale"
                 },
                 "natural/volcano": {
                     "name": "Volcano",
@@ -6987,7 +7189,7 @@
                 },
                 "point": {
                     "name": "Point",
-                    "terms": ""
+                    "terms": "node,other,vertex,vertices"
                 },
                 "power/sub_station": {
                     "name": "Substation",
@@ -7045,45 +7247,85 @@
                     "name": "Transformer",
                     "terms": ""
                 },
-                "public_transport/platform_aerialway": {
+                "public_transport/platform_point": {
+                    "name": "Transit Stop / Platform",
+                    "terms": "platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform": {
+                    "name": "Transit Platform",
+                    "terms": "platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform/aerialway_point": {
                     "name": "Aerialway Stop / Platform",
                     "terms": "aerialway,cable car,platform,public transit,public transportation,transit,transportation"
                 },
-                "public_transport/platform_bus": {
-                    "name": "Bus Stop / Platform",
-                    "terms": "bus,platform,public transit,public transportation,transit,transportation"
-                },
-                "public_transport/platform_ferry": {
+                "public_transport/platform/ferry_point": {
                     "name": "Ferry Stop / Platform",
                     "terms": "boat,dock,ferry,pier,platform,public transit,public transportation,transit,transportation"
                 },
-                "public_transport/platform_light_rail": {
+                "public_transport/platform/light_rail_point": {
                     "name": "Light Rail Stop / Platform",
                     "terms": "electric,light rail,platform,public transit,public transportation,rail,track,tram,trolley,transit,transportation"
                 },
-                "public_transport/platform_monorail": {
+                "public_transport/platform/monorail_point": {
                     "name": "Monorail Stop / Platform",
                     "terms": "monorail,platform,public transit,public transportation,rail,transit,transportation"
                 },
-                "public_transport/platform_subway": {
+                "public_transport/platform/subway_point": {
                     "name": "Subway Stop / Platform",
                     "terms": "metro,platform,public transit,public transportation,rail,subway,track,transit,transportation,underground"
                 },
-                "public_transport/platform_train": {
+                "public_transport/platform/train_point": {
                     "name": "Train Stop / Platform",
                     "terms": "platform,public transit,public transportation,rail,track,train,transit,transportation"
                 },
-                "public_transport/platform_tram": {
+                "public_transport/platform/tram_point": {
                     "name": "Tram Stop / Platform",
                     "terms": "electric,light rail,platform,public transit,public transportation,rail,streetcar,track,tram,trolley,transit,transportation"
                 },
-                "public_transport/platform_trolleybus": {
-                    "name": "Trolleybus Stop / Platform",
+                "public_transport/platform/aerialway": {
+                    "name": "Aerialway Platform",
+                    "terms": "aerialway,cable car,platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform/bus_point": {
+                    "name": "Bus Stop",
+                    "terms": "bus,platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform/bus": {
+                    "name": "Bus Platform",
+                    "terms": "bus,platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform/ferry": {
+                    "name": "Ferry Platform",
+                    "terms": "boat,dock,ferry,pier,platform,public transit,public transportation,transit,transportation"
+                },
+                "public_transport/platform/light_rail": {
+                    "name": "Light Rail Platform",
+                    "terms": "electric,light rail,platform,public transit,public transportation,rail,track,tram,trolley,transit,transportation"
+                },
+                "public_transport/platform/monorail": {
+                    "name": "Monorail Platform",
+                    "terms": "monorail,platform,public transit,public transportation,rail,transit,transportation"
+                },
+                "public_transport/platform/subway": {
+                    "name": "Subway Platform",
+                    "terms": "metro,platform,public transit,public transportation,rail,subway,track,transit,transportation,underground"
+                },
+                "public_transport/platform/train": {
+                    "name": "Train Platform",
+                    "terms": "platform,public transit,public transportation,rail,track,train,transit,transportation"
+                },
+                "public_transport/platform/tram": {
+                    "name": "Tram Platform",
+                    "terms": "electric,light rail,platform,public transit,public transportation,rail,streetcar,track,tram,trolley,transit,transportation"
+                },
+                "public_transport/platform/trolleybus_point": {
+                    "name": "Trolleybus Stop",
                     "terms": "bus,electric,platform,public transit,public transportation,streetcar,trackless,tram,trolley,transit,transportation"
                 },
-                "public_transport/platform": {
-                    "name": "Transit Stop / Platform",
-                    "terms": "platform,public transit,public transportation,transit,transportation"
+                "public_transport/platform/trolleybus": {
+                    "name": "Trolleybus Platform",
+                    "terms": "bus,electric,platform,public transit,public transportation,streetcar,trackless,tram,trolley,transit,transportation"
                 },
                 "public_transport/station_aerialway": {
                     "name": "Aerialway Station",
@@ -7178,7 +7420,7 @@
                     "terms": "break,interrupt,rest,wait,interruption"
                 },
                 "railway/platform": {
-                    "name": "Train Stop / Platform",
+                    "name": "Train Platform",
                     "terms": ""
                 },
                 "railway/station": {
@@ -7241,6 +7483,10 @@
                     "name": "Rail",
                     "terms": ""
                 },
+                "railway/rail/highspeed": {
+                    "name": "High-Speed Rail",
+                    "terms": "bullet train,fast rail,high speed rail,highspeed rail,HSR"
+                },
                 "railway/signal": {
                     "name": "Railway Signal",
                     "terms": "signal,lights"
@@ -7299,6 +7545,14 @@
                 },
                 "shop": {
                     "name": "Shop",
+                    "terms": ""
+                },
+                "shop/boutique": {
+                    "name": "Boutique",
+                    "terms": ""
+                },
+                "shop/fashion": {
+                    "name": "Fashion Store",
                     "terms": ""
                 },
                 "shop/fishmonger": {
@@ -7385,10 +7639,6 @@
                     "name": "Book Store",
                     "terms": ""
                 },
-                "shop/boutique": {
-                    "name": "Boutique",
-                    "terms": ""
-                },
                 "shop/butcher": {
                     "name": "Butcher",
                     "terms": "chicken,beef,lamb,meat,pork"
@@ -7439,7 +7689,7 @@
                 },
                 "shop/clothes": {
                     "name": "Clothing Store",
-                    "terms": ""
+                    "terms": "blouses,boutique,bras,clothes,dresses,fashion,pants,shirts,shorts,skirts,slacks,socks,suits,underwear"
                 },
                 "shop/coffee": {
                     "name": "Coffee Store",
@@ -7520,10 +7770,6 @@
                 "shop/farm": {
                     "name": "Produce Stand",
                     "terms": "farm shop,farm stand"
-                },
-                "shop/fashion": {
-                    "name": "Fashion Store",
-                    "terms": ""
                 },
                 "shop/fireplace": {
                     "name": "Fireplace Store",
@@ -7945,6 +8191,10 @@
                     "name": "Tourist Information Office",
                     "terms": ""
                 },
+                "tourism/information/route_marker": {
+                    "name": "Trail Marker",
+                    "terms": "cairn,painted blaze,route flag,route marker,stone pile,trail blaze,trail post,way marker"
+                },
                 "tourism/motel": {
                     "name": "Motel",
                     "terms": ""
@@ -8168,10 +8418,6 @@
                 "type/waterway": {
                     "name": "Waterway",
                     "terms": ""
-                },
-                "vertex": {
-                    "name": "Vertex",
-                    "terms": "other"
                 },
                 "waterway/riverbank": {
                     "name": "Riverbank",
