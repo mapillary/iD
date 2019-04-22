@@ -321,6 +321,7 @@ label.streetside-hires {
 
 .mly-wrapper .mly-content {
     flex: 1;
+    background-color: #000;
 }
 
 .mly-wrapper .photo-attribution a:active,

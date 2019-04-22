@@ -126,7 +126,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
     }
 
     function shouldDisplayTile(filters, data) {
-        return (filters.mapillaryCoverage && !data.organization_key && !filters.organization_key)
+        return (filters.mapillaryCoverage && !data.organization_key)
             || (filters.organization_key
                 && data.organization_key === filters.organization_key
                 && ((filters.organizationPublicCoverage && filters.organizationPrivateCoverage)

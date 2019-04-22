@@ -17,7 +17,7 @@ import { geoExtent, geoScaleToZoom } from '../geo';
 import { svgDefs } from '../svg';
 import { utilQsString, utilRebind, utilTiler } from '../util';
 
-var CLIENT_ID = 'T0x1T2J4eTFfdm4zVjRhSVBMWTczUTo2Njg5MWViYWYxNjgwODI1';
+var CLIENT_ID = 'T0x1T2J4eTFfdm4zVjRhSVBMWTczUTpkOWUzZmY2MWI2MDhkMmI1';
 var REDIRECT_URI = 'http://localhost:8080';
 var POST_MESSAGE_TARGET_ORIGIN = 'http://localhost:8080';
 
@@ -489,12 +489,6 @@ var uiOrganizationFilters = function() {
 
                 update();
 
-                _mlyViewer.setFilter(
-                    _mlyFilters.organization_key
-                    ? ['==', 'organizationKey', _mlyFilters.organization_key ]
-                    : null
-                );
-
                 dispatch.call('loadedImages');
             })
             .merge(dropdown)
@@ -532,7 +526,7 @@ var uiOrganizationFilters = function() {
             label: 'Mapillary Coverage Layer',
             color: 'green',
             key: 'mapillaryCoverage',
-            isVisible: !_mlyFilters.organization_key,
+            isVisible: true,
         }];
 
         if (_mlyFilters.organization_key) {
@@ -620,7 +614,9 @@ var uiOrganizationFilters = function() {
             var accessToken = OAuth.getAccessToken();
 
             // reset viewer token
-            _mlyViewer.setAuthToken(accessToken);
+            if (_mlyViewer) {
+                _mlyViewer.setAuthToken(accessToken);
+            }
 
             // reset caches
             reset();
@@ -738,7 +734,7 @@ export default {
         wrap.enter()
             .append('div')
             .attr('class', 'photo-wrapper mly-wrapper')
-            .classed('hide', true)
+            // .classed('hide', true)
             .html(
                 '<div class="mly-header"></div>' +
                 '<div class="mly-content" id="mly"></div>' +
@@ -778,6 +774,8 @@ export default {
                 _mlyViewer.resize();
             }
         });
+
+        this.showViewer();
     },
 
 
