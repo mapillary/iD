@@ -161,7 +161,7 @@
 .sequence {
     fill: none;
     stroke-width: 2;
-    stroke-opacity: 0.4;
+    cursor: pointer;
 }
 .sequence.highlighted,
 .sequence.currentView {
@@ -184,9 +184,6 @@
 
 
 /* Mapillary Image Layer */
-.layer-mapillary {
-    pointer-events: none;
-}
 .layer-mapillary .viewfield-group * {
     fill: #55ff22;
 }

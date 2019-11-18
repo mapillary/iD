@@ -156,11 +156,12 @@ function loadNextTilePage(which, currZoom, url, tile) {
                 // Each sequence feature is a GeoJSON LineString
                 } else if (which === 'sequences') {
                     var sequenceKey = feature.properties.key;
+                    d = {
+                        loc:loc,
+                        key: sequenceKey
+                    };
                     cache.lineString[sequenceKey] = feature;           // cache sequenceKey -> lineString
-                    feature.properties.coordinateProperties.image_keys.forEach(function(imageKey) {
-                        cache.forImageKey[imageKey] = sequenceKey;     // cache imageKey -> sequenceKey
-                    });
-                    return false;    // because no `d` data worth loading into an rbush
+                    cache.geometries.push(feature);
 
                 // An image detection is a semantic pixel area on an image. The area could indicate
                 // sky, trees, sidewalk in the image. A detection can be a polygon, a bounding box, or a point.
@@ -296,7 +297,7 @@ export default {
             image_detections: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, forImageKey: {} },
             map_features: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: new RBush() },
             points: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: new RBush() },
-            sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: new RBush(), forImageKey: {}, lineString: {} }
+            sequences: { inflight: {}, loaded: {}, nextPage: {}, nextURL: {}, rtree: new RBush(), forImageKey: {}, lineString: {}, geometries: [] }
         };
 
         _mlySelectedImage = null;
@@ -328,25 +329,7 @@ export default {
 
 
     sequences: function(projection) {
-        var viewport = projection.clipExtent();
-        var min = [viewport[0][0], viewport[1][1]];
-        var max = [viewport[1][0], viewport[0][1]];
-        var bbox = geoExtent(projection.invert(min), projection.invert(max)).bbox();
-        var sequenceKeys = {};
-
-        // all sequences for images in viewport
-        _mlyCache.images.rtree.search(bbox)
-            .forEach(function(d) {
-                var sequenceKey = _mlyCache.sequences.forImageKey[d.data.key];
-                if (sequenceKey) {
-                    sequenceKeys[sequenceKey] = true;
-                }
-            });
-
-        // Return lineStrings for the sequences
-        return Object.keys(sequenceKeys).map(function(sequenceKey) {
-            return _mlyCache.sequences.lineString[sequenceKey];
-        });
+        return _mlyCache.sequences.geometries;
     },
 
 
@@ -356,7 +339,6 @@ export default {
 
 
     loadImages: function(projection) {
-        loadTiles('images', apibase + 'images?sort_by=key&', projection);
         loadTiles('sequences', apibase + 'sequences?sort_by=key&', projection);
     },
 

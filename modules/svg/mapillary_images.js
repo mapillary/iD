@@ -85,15 +85,7 @@ export function svgMapillaryImages(projection, context, dispatch) {
 
 
     function click(d) {
-        var service = getService();
-        if (!service) return;
-
-        service
-            .selectImage(d)
-            .updateViewer(d.key, context)
-            .showViewer();
-
-        context.map().centerEase(d.loc);
+        console.log(d);
     }
 
 
@@ -181,6 +173,8 @@ export function svgMapillaryImages(projection, context, dispatch) {
         // exit
         traces.exit()
             .remove();
+
+        traces.on('click', click);
 
         // enter/update
         traces = traces.enter()
